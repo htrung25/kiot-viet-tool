@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KiotVietTool.Application/KiotVietTool.Application.csproj" />
+    <Project Path="src/KiotVietTool.Desktop/KiotVietTool.Desktop.csproj" />
+    <Project Path="src/KiotVietTool.Domain/KiotVietTool.Domain.csproj" />
+    <Project Path="src/KiotVietTool.Infrastructure/KiotVietTool.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KiotVietTool.Application.Tests/KiotVietTool.Application.Tests.csproj" />
+    <Project Path="tests/KiotVietTool.Infrastructure.Tests/KiotVietTool.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
