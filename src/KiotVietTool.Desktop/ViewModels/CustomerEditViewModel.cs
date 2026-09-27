@@ -28,7 +28,7 @@ public sealed partial class CustomerEditViewModel(
         var result = await customerService.GetAsync(id, cancellationToken);
         if (!result.IsSuccess)
         {
-            dialog.ShowError(result.Error!);
+            await dialog.ShowErrorAsync(result.Error!);
             await BackToListAsync(cancellationToken);
             return;
         }

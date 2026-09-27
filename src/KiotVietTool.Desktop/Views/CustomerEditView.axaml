@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             x:Class="KiotVietTool.Desktop.Views.CustomerEditView"
+             x:DataType="vm:CustomerEditViewModel">
+    <StackPanel MaxWidth="560" HorizontalAlignment="Left">
+        <TextBlock Text="{Binding Title}" Classes="pageTitle" />
+
+        <Grid ColumnDefinitions="Auto,400" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Text="Mã khách hàng *" Classes="fieldLabel" />
+            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Code}" Classes="field" />
+            <TextBlock Grid.Row="1" Text="Tên khách hàng *" Classes="fieldLabel" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Name}" Classes="field" />
+            <TextBlock Grid.Row="2" Text="Điện thoại" Classes="fieldLabel" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Phone}" Classes="field" />
+            <TextBlock Grid.Row="3" Text="Email" Classes="fieldLabel" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Email}" Classes="field" />
+            <TextBlock Grid.Row="4" Text="Địa chỉ" Classes="fieldLabel" VerticalAlignment="Top" />
+            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Address}" Classes="field"
+                     Height="64" TextWrapping="Wrap" AcceptsReturn="True" />
+        </Grid>
+
+        <TextBlock Text="{Binding ErrorMessage}" Classes="error" TextWrapping="Wrap" Margin="0,4,0,12" />
+
+        <StackPanel Classes="buttons">
+            <Button Content="Lưu" Command="{Binding SaveCommand}" IsDefault="True" />
+            <Button Content="Huỷ" Command="{Binding CancelCommand}" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

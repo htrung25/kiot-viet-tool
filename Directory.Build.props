@@ -5,8 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <!-- Lets macOS/Linux build the net10.0-windows WPF project -->
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
     <Version>0.1.0</Version>
     <Company>KiotVietTool</Company>

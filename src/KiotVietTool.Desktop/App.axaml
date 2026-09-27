@@ -1,0 +1,23 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:views="using:KiotVietTool.Desktop.Views"
+             x:Class="KiotVietTool.Desktop.App"
+             RequestedThemeVariant="Light">
+
+    <!-- ViewModel → View mapping used by INavigationService. Add one line per new screen. -->
+    <Application.DataTemplates>
+        <DataTemplate DataType="vm:CustomerListViewModel">
+            <views:CustomerListView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:CustomerEditViewModel">
+            <views:CustomerEditView />
+        </DataTemplate>
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="/Resources/Styles.axaml" />
+    </Application.Styles>
+</Application>

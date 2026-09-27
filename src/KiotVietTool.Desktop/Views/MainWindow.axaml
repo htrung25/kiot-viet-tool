@@ -1,0 +1,9 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+        x:Class="KiotVietTool.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="KiotViet Tool" Width="1000" Height="640" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <ContentControl Margin="20" Content="{Binding Navigation.CurrentViewModel}" />
+</Window>

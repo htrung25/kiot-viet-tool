@@ -43,10 +43,10 @@ public sealed partial class CustomerListViewModel(
     async Task DeleteAsync(CancellationToken cancellationToken)
     {
         var customer = SelectedCustomer!;
-        if (!dialog.Confirm($"Xoá khách hàng \"{customer.Name}\" ({customer.Code})?")) return;
+        if (!await dialog.ConfirmAsync($"Xoá khách hàng \"{customer.Name}\" ({customer.Code})?")) return;
 
         var result = await customerService.DeleteAsync(customer.Id, cancellationToken);
-        if (!result.IsSuccess) dialog.ShowError(result.Error!);
+        if (!result.IsSuccess) await dialog.ShowErrorAsync(result.Error!);
         await SearchAsync(cancellationToken);
     }
 

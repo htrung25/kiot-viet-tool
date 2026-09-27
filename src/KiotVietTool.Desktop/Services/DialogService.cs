@@ -1,21 +1,26 @@
-using System.Windows;
+using Avalonia.Controls.ApplicationLifetimes;
+using KiotVietTool.Desktop.Views;
 
 namespace KiotVietTool.Desktop.Services;
 
 public sealed class DialogService : IDialogService
 {
-    public void ShowInfo(string message) => Show(message, MessageBoxButton.OK, MessageBoxImage.Information);
+    public Task ShowInfoAsync(string message) => ShowAsync(message, MessageDialogKind.Info);
 
-    public void ShowError(string message) => Show(message, MessageBoxButton.OK, MessageBoxImage.Error);
+    public Task ShowErrorAsync(string message) => ShowAsync(message, MessageDialogKind.Error);
 
-    public bool Confirm(string message) =>
-        Show(message, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+    public Task<bool> ConfirmAsync(string message) => ShowAsync(message, MessageDialogKind.Confirm);
 
-    static MessageBoxResult Show(string message, MessageBoxButton buttons, MessageBoxImage icon)
+    static async Task<bool> ShowAsync(string message, MessageDialogKind kind)
     {
-        var owner = System.Windows.Application.Current.MainWindow;
-        return owner is null
-            ? MessageBox.Show(message, "", buttons, icon)
-            : MessageBox.Show(owner, message, owner.Title, buttons, icon);
+        var owner = (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+        var dialog = new MessageDialog(message, owner?.Title ?? "", kind);
+        if (owner is { IsVisible: true }) return await dialog.ShowDialog<bool>(owner);
+
+        // No visible owner (e.g. startup failure): show standalone and wait for it to close.
+        var closed = new TaskCompletionSource<bool>();
+        dialog.Closed += (_, _) => closed.TrySetResult(dialog.Result);
+        dialog.Show();
+        return await closed.Task;
     }
 }

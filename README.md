@@ -1,19 +1,18 @@
 # KiotVietTool
 
-Ứng dụng desktop Windows (WPF, .NET 10), phát hành dưới dạng **một file `.exe` self-contained**: máy khách không cần cài .NET.
+Ứng dụng desktop (Avalonia, .NET 10) cho khách dùng Windows, phát hành dưới dạng **một file `.exe` self-contained**: máy khách không cần cài .NET.
+Khi phát triển, app chạy thẳng trên macOS.
 
 ## Yêu cầu môi trường
 
 | Việc | Cần có |
 |---|---|
-| Build / test / publish | .NET SDK 10.0.401+ (xem `global.json`), chạy được trên macOS, Linux, Windows |
-| Chạy ứng dụng | Windows 10/11 x64 (máy thật hoặc VM) |
-| IDE (tuỳ chọn) | Rider, Visual Studio 2026, VS Code + C# Dev Kit |
+| Dev: build / test / chạy / publish | .NET SDK 10.0.401+ (xem `global.json`) trên macOS, Linux hoặc Windows |
+| Khách dùng | Windows 10/11 x64 |
+| IDE (tuỳ chọn) | Rider hoặc VS Code + extension **Avalonia for VS Code** (có xem trước XAML) |
 
 macOS cài SDK: `brew install --cask dotnet-sdk`
 
-> Project WPF (`net10.0-windows`) **build được** trên macOS nhờ `EnableWindowsTargeting`, nhưng **chỉ chạy được trên Windows**.
-> Các project còn lại dùng `net10.0`, nên toàn bộ test chạy được trên macOS.
 
 ## Lệnh thường dùng
 
@@ -21,6 +20,10 @@ macOS cài SDK: `brew install --cask dotnet-sdk`
 dotnet tool restore                 # cài dotnet-ef (local tool)
 dotnet build                        # build toàn solution
 dotnet test                         # chạy test (Microsoft.Testing.Platform)
+
+# Chạy giao diện khi dev (macOS/Windows)
+dotnet run --project src/KiotVietTool.Desktop
+dotnet watch --project src/KiotVietTool.Desktop   # tự chạy lại khi sửa code
 
 # Publish ra artifacts/publish/win-x64/KiotVietTool.exe + appsettings.json
 dotnet publish src/KiotVietTool.Desktop -p:PublishProfile=win-x64
@@ -36,7 +39,13 @@ dotnet ef migrations add <TenMigration> \
 
 App tự áp migration mỗi lần khởi động, không cần chạy `dotnet ef database update`.
 
-## Chạy trên Windows VM
+## Khi dev: chạy trên macOS
+
+- `dotnet run --project src/KiotVietTool.Desktop`: bản Debug có Avalonia DevTools, bấm **F12** để soi cây control và binding.
+- Dữ liệu: `~/Library/Application Support/KiotVietTool/app.db`
+- Log: `~/Library/Application Support/KiotVietTool/logs/`
+
+## Kiểm tra bản phát hành trên Windows
 
 1. Publish trên máy dev (lệnh ở trên), hoặc tải artifact `KiotVietTool-win-x64-*` từ tab **Actions** trên GitHub.
 2. Copy **cả thư mục** `artifacts/publish/win-x64/` (gồm `KiotVietTool.exe` và `appsettings.json`) sang VM. Với Parallels hoặc UTM, dùng thư mục chia sẻ là tiện nhất.
@@ -68,7 +77,7 @@ src/
   KiotVietTool.Domain          Entity, quy tắc nghiệp vụ (không phụ thuộc gì)
   KiotVietTool.Application     Use case (Features/<Feature>), interface, DTO
   KiotVietTool.Infrastructure  EF Core + SQLite, repository, migration
-  KiotVietTool.Desktop         WPF: View, ViewModel, Navigation, Dialog, composition root
+  KiotVietTool.Desktop         Avalonia: View, ViewModel, Navigation, Dialog, composition root
 tests/
   KiotVietTool.Application.Tests     Unit test (NSubstitute)
   KiotVietTool.Infrastructure.Tests  Integration test trên SQLite in-memory + migration thật
