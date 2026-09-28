@@ -21,18 +21,18 @@ dotnet tool restore                 # cài dotnet-ef (local tool)
 dotnet build                        # build toàn solution
 
 # Chạy giao diện khi dev (macOS/Windows)
-dotnet run --project src/KiotVietTool.Desktop
-dotnet watch --project src/KiotVietTool.Desktop   # tự chạy lại khi sửa code
+dotnet run --project src/Desktop
+dotnet watch --project src/Desktop   # tự chạy lại khi sửa code
 
 # Publish ra artifacts/publish/win-x64/KiotVietTool.exe + appsettings.json
-dotnet publish src/KiotVietTool.Desktop -p:PublishProfile=win-x64
+dotnet publish src/Desktop -p:PublishProfile=win-x64
 ```
 
 ### EF Core migration
 
 ```bash
 dotnet ef migrations add <TenMigration> \
-  -p src/KiotVietTool.Infrastructure -s src/KiotVietTool.Infrastructure \
+  -p src/Infrastructure -s src/Infrastructure \
   -o Persistence/Migrations
 ```
 
@@ -40,7 +40,7 @@ App tự áp migration mỗi lần khởi động, không cần chạy `dotnet e
 
 ## Khi dev: chạy trên macOS
 
-- `dotnet run --project src/KiotVietTool.Desktop`: bản Debug có Avalonia DevTools, bấm **F12** để soi cây control và binding.
+- `dotnet run --project src/Desktop`: bản Debug có Avalonia DevTools, bấm **F12** để soi cây control và binding.
 - Dữ liệu: `~/Library/Application Support/KiotVietTool/app.db`
 - Log: `~/Library/Application Support/KiotVietTool/logs/`
 
@@ -83,20 +83,20 @@ Mọi layer đều chia theo feature (`Features/<Tên>/`), phần dùng chung đ
 
 ```
 src/
-  KiotVietTool.Domain/          Entity + quy tắc nghiệp vụ, không phụ thuộc gì
+  Domain/          (KiotVietTool.Domain)          Entity + quy tắc nghiệp vụ, không phụ thuộc gì
     Auth/  Customers/  Common/
-  KiotVietTool.Application/     Use case
+  Application/     (KiotVietTool.Application)     Use case
     Features/Auth/  Features/Customers/   (service, interface repository, DTO)
     Common/                               (Result)
-  KiotVietTool.Infrastructure/  EF Core + SQLite
+  Infrastructure/  (KiotVietTool.Infrastructure)  EF Core + SQLite
     Persistence/                          (DbContext, DatabaseInitializer, Configurations, Migrations)
     Features/Auth/  Features/Customers/   (repository, hash mật khẩu)
-  KiotVietTool.Desktop/         Avalonia
+  Desktop/         (KiotVietTool.Desktop)         Avalonia
     Program.cs  App.axaml(.cs)            (composition root)
-    Shell/                                (MainWindow, thanh trên cùng)
+    Shell/                                (MainWindow, sidebar)
     Features/Auth/  Features/Customers/   (View + ViewModel đặt cạnh nhau)
-    Common/                               (ViewModelBase, Navigation, Dialogs, Platform)
-    Resources/                            (Styles)
+    Common/                               (ViewModelBase, Navigation, Dialogs, Notifications, Platform)
+    Resources/                            (Colors, Icons, Styles: design token)
 ```
 
 Chi tiết kiến trúc và quy tắc code: xem [CLAUDE.md](CLAUDE.md).

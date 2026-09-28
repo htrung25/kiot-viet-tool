@@ -1,0 +1,72 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KiotVietTool.Desktop.Shell"
+        x:Class="KiotVietTool.Desktop.Shell.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="KiotViet Tool" Width="1200" Height="760" MinWidth="960" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+    <Grid ColumnDefinitions="Auto,*">
+        <!-- Sidebar -->
+        <Border Classes="sidebar" IsVisible="{Binding ShowChrome}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="20,22,20,28">
+                    <Border Classes="logo">
+                        <PathIcon Data="{StaticResource Icon.Store}" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="KiotViet Tool" FontWeight="SemiBold" FontSize="15"
+                                   Foreground="{StaticResource Text.Primary}" />
+                        <TextBlock Text="Quản lý cửa hàng" Classes="caption" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource Border.Default}"
+                        BorderThickness="0,1,0,0" Padding="12">
+                    <Button Classes="userMenu" ToolTip.Tip="Tài khoản">
+                        <Button.Flyout>
+                            <MenuFlyout Placement="TopEdgeAlignedLeft">
+                                <MenuItem Header="Đổi mật khẩu" Command="{Binding ChangePasswordCommand}">
+                                    <MenuItem.Icon>
+                                        <PathIcon Data="{StaticResource Icon.Lock}" Width="16" Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem Header="Đăng xuất" Command="{Binding SignOutCommand}">
+                                    <MenuItem.Icon>
+                                        <PathIcon Data="{StaticResource Icon.Logout}" Width="16" Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Border Classes="avatar">
+                                <TextBlock Text="{Binding UserInitial}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Username}" FontWeight="Medium"
+                                           Foreground="{StaticResource Text.Primary}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="Quản trị viên" Classes="caption" />
+                            </StackPanel>
+                            <PathIcon Grid.Column="2" Data="{StaticResource Icon.UnfoldMore}"
+                                      Foreground="{StaticResource Text.Subtle}" />
+                        </Grid>
+                    </Button>
+                </Border>
+
+                <StackPanel Margin="12,0" Spacing="2">
+                    <TextBlock Text="QUẢN LÝ" Classes="navSection" />
+                    <Button Classes="navItem" Classes.active="{Binding IsCustomersActive}"
+                            Command="{Binding OpenCustomersCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <PathIcon Data="{StaticResource Icon.Customers}" />
+                            <TextBlock Text="Khách hàng" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Page -->
+        <ContentControl Grid.Column="1" Content="{Binding Navigation.CurrentViewModel}" />
+    </Grid>
+</Window>

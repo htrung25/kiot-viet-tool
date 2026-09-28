@@ -1,0 +1,46 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:auth="using:KiotVietTool.Desktop.Features.Auth"
+             xmlns:customers="using:KiotVietTool.Desktop.Features.Customers"
+             x:Class="KiotVietTool.Desktop.App"
+             RequestedThemeVariant="Light">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Resources/Colors.axaml" />
+                <ResourceInclude Source="/Resources/Icons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <!-- ViewModel → View mapping used by INavigationService. Add one line per new screen. -->
+    <Application.DataTemplates>
+        <DataTemplate DataType="auth:LoginViewModel">
+            <auth:LoginView />
+        </DataTemplate>
+        <DataTemplate DataType="auth:ChangePasswordViewModel">
+            <auth:ChangePasswordView />
+        </DataTemplate>
+        <DataTemplate DataType="customers:CustomerListViewModel">
+            <customers:CustomerListView />
+        </DataTemplate>
+        <DataTemplate DataType="customers:CustomerEditViewModel">
+            <customers:CustomerEditView />
+        </DataTemplate>
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme>
+            <!-- Accent drives focus rings, selection and Classes="accent" buttons; keep in sync with Primary in Colors.axaml -->
+            <FluentTheme.Palettes>
+                <ColorPaletteResources x:Key="Light" Accent="#FF2563EB" ErrorText="#FFDC2626" />
+            </FluentTheme.Palettes>
+        </FluentTheme>
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+        <StyleInclude Source="/Resources/Styles.axaml" />
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{StaticResource Bg.App}" />
+        </Style>
+    </Application.Styles>
+</Application>

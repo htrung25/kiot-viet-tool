@@ -1,0 +1,325 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Colors come from Resources/Colors.axaml, icons from Resources/Icons.axaml. -->
+
+    <!-- ===== Typography ===== -->
+    <Style Selector="TextBlock.h1">
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="TextBlock.subtitle">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+    <Style Selector="TextBlock.label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
+    </Style>
+    <Style Selector="TextBlock.required">
+        <Setter Property="Foreground" Value="{StaticResource Danger}" />
+    </Style>
+
+    <!-- ===== Buttons ===== -->
+    <Style Selector="Button">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button PathIcon">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+
+    <!-- Secondary: white with border -->
+    <Style Selector="Button.secondary">
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+
+    <!-- Danger: destructive primary action -->
+    <Style Selector="Button.danger">
+        <Setter Property="Background" Value="{StaticResource Danger}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Danger.Hover}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}" />
+    </Style>
+
+    <!-- Ghost: text-only, e.g. "back" links -->
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+
+    <!-- Icon-only row actions -->
+    <Style Selector="Button.icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="Button.icon.danger">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+    <Style Selector="Button.icon.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Danger.Soft}" />
+        <Setter Property="Foreground" Value="{StaticResource Danger}" />
+    </Style>
+
+    <!-- ===== Inputs ===== -->
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}" />
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox.multiline">
+        <Setter Property="MinHeight" Value="88" />
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+    <Style Selector="TextBox PathIcon.leading">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Margin" Value="10,0,0,0" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Subtle}" />
+    </Style>
+    <!-- A form field: label above input -->
+    <Style Selector="StackPanel.field">
+        <Setter Property="Spacing" Value="6" />
+    </Style>
+
+    <!-- ===== Surfaces ===== -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Default}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="BoxShadow" Value="0 1 2 0 #0F172A0D" />
+        <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.divider">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{StaticResource Border.Default}" />
+    </Style>
+    <!-- Page body inside the app shell -->
+    <Style Selector="Grid.page, StackPanel.page, DockPanel.page">
+        <Setter Property="Margin" Value="32,28" />
+    </Style>
+
+    <!-- ===== Alerts ===== -->
+    <Style Selector="Border.alert">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <Style Selector="Border.alert TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.alert PathIcon">
+        <Setter Property="Width" Value="18" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+    </Style>
+    <Style Selector="Border.alert.error">
+        <Setter Property="Background" Value="{StaticResource Danger.Soft}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Danger.SoftBorder}" />
+    </Style>
+    <Style Selector="Border.alert.error TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Danger.Text}" />
+    </Style>
+    <Style Selector="Border.alert.error PathIcon">
+        <Setter Property="Foreground" Value="{StaticResource Danger.Text}" />
+    </Style>
+    <Style Selector="Border.alert.warning">
+        <Setter Property="Background" Value="{StaticResource Warning.Soft}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Warning.SoftBorder}" />
+    </Style>
+    <Style Selector="Border.alert.warning TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Warning.Text}" />
+    </Style>
+    <Style Selector="Border.alert.warning PathIcon">
+        <Setter Property="Foreground" Value="{StaticResource Warning.Icon}" />
+    </Style>
+
+    <!-- ===== Empty state ===== -->
+    <Style Selector="Border.emptyIcon">
+        <Setter Property="Width" Value="56" />
+        <Setter Property="Height" Value="56" />
+        <Setter Property="CornerRadius" Value="28" />
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.emptyIcon PathIcon">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+
+    <!-- ===== Data grid ===== -->
+    <Style Selector="DataGrid">
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="RowHeight" Value="52" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource Border.Default}" />
+        <Setter Property="CanUserResizeColumns" Value="True" />
+    </Style>
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource Bg.App}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,0,4,0" />
+        <Setter Property="SeparatorBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="DataGridCell">
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="DataGridCell TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="Margin" Value="0" />
+    </Style>
+    <Style Selector="TextBlock.code">
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+
+    <!-- ===== Shell: sidebar ===== -->
+    <Style Selector="Border.sidebar">
+        <Setter Property="Width" Value="248" />
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Default}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+    </Style>
+    <Style Selector="Border.logo">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Background" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Border.logo PathIcon">
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}" />
+    </Style>
+    <Style Selector="TextBlock.navSection">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Subtle}" />
+        <Setter Property="Margin" Value="12,0,0,6" />
+    </Style>
+    <Style Selector="Button.navItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Button.navItem PathIcon">
+        <Setter Property="Width" Value="18" />
+        <Setter Property="Height" Value="18" />
+    </Style>
+    <Style Selector="Button.navItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="Button.navItem.active">
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Button.navItem.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Button.userMenu">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="8" />
+    </Style>
+    <Style Selector="Button.userMenu:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+    </Style>
+    <Style Selector="Border.avatar">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="CornerRadius" Value="17" />
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+    </Style>
+    <Style Selector="Border.avatar TextBlock">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+
+    <!-- ===== Dialog ===== -->
+    <Style Selector="Border.dialogIcon">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="CornerRadius" Value="20" />
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+    <Style Selector="Border.dialogIcon PathIcon">
+        <Setter Property="Width" Value="22" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Border.dialogIcon.danger">
+        <Setter Property="Background" Value="{StaticResource Danger.Soft}" />
+    </Style>
+    <Style Selector="Border.dialogIcon.danger PathIcon">
+        <Setter Property="Foreground" Value="{StaticResource Danger}" />
+    </Style>
+</Styles>

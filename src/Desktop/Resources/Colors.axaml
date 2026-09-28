@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Design tokens. Use these brushes instead of hex values in views. -->
+
+    <!-- Neutral (slate) -->
+    <SolidColorBrush x:Key="Bg.App" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="Bg.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Bg.Subtle" Color="#F1F5F9" />
+    <SolidColorBrush x:Key="Border.Default" Color="#E2E8F0" />
+    <SolidColorBrush x:Key="Border.Strong" Color="#CBD5E1" />
+    <SolidColorBrush x:Key="Text.Primary" Color="#0F172A" />
+    <SolidColorBrush x:Key="Text.Secondary" Color="#475569" />
+    <SolidColorBrush x:Key="Text.Muted" Color="#64748B" />
+    <SolidColorBrush x:Key="Text.Subtle" Color="#94A3B8" />
+    <SolidColorBrush x:Key="Text.OnPrimary" Color="#FFFFFF" />
+
+    <!-- Primary (blue) -->
+    <SolidColorBrush x:Key="Primary" Color="#2563EB" />
+    <SolidColorBrush x:Key="Primary.Hover" Color="#1D4ED8" />
+    <SolidColorBrush x:Key="Primary.Soft" Color="#EFF6FF" />
+    <SolidColorBrush x:Key="Primary.SoftBorder" Color="#BFDBFE" />
+
+    <!-- Danger (red) -->
+    <SolidColorBrush x:Key="Danger" Color="#DC2626" />
+    <SolidColorBrush x:Key="Danger.Hover" Color="#B91C1C" />
+    <SolidColorBrush x:Key="Danger.Soft" Color="#FEF2F2" />
+    <SolidColorBrush x:Key="Danger.SoftBorder" Color="#FECACA" />
+    <SolidColorBrush x:Key="Danger.Text" Color="#B91C1C" />
+
+    <!-- Warning (amber) -->
+    <SolidColorBrush x:Key="Warning.Soft" Color="#FFFBEB" />
+    <SolidColorBrush x:Key="Warning.SoftBorder" Color="#FDE68A" />
+    <SolidColorBrush x:Key="Warning.Text" Color="#92400E" />
+    <SolidColorBrush x:Key="Warning.Icon" Color="#D97706" />
+
+    <!-- Brand panel on the login screen -->
+    <LinearGradientBrush x:Key="Brand.Gradient" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Offset="0" Color="#1E3A8A" />
+        <GradientStop Offset="1" Color="#2563EB" />
+    </LinearGradientBrush>
+</ResourceDictionary>

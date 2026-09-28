@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.Features.Customers"
+             x:Class="KiotVietTool.Desktop.Features.Customers.CustomerEditView"
+             x:DataType="vm:CustomerEditViewModel">
+    <ScrollViewer>
+        <Grid Classes="page">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="760" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="20">
+                <!-- Header -->
+                <StackPanel Spacing="8">
+                    <Button Classes="ghost" HorizontalAlignment="Left" Margin="-8,0,0,0" Command="{Binding CancelCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource Icon.ArrowLeft}" />
+                            <TextBlock Text="Danh sách khách hàng" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="{Binding Title}" Classes="h1" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="subtitle" />
+                </StackPanel>
+
+                <!-- Form -->
+                <Border Classes="card">
+                    <StackPanel>
+                        <Grid Margin="24" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto"
+                              ColumnSpacing="20" RowSpacing="18">
+                            <Border Grid.ColumnSpan="2" Classes="alert error"
+                                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <DockPanel>
+                                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                                    <TextBlock Text="{Binding ErrorMessage}" />
+                                </DockPanel>
+                            </Border>
+
+                            <StackPanel Grid.Row="1" Classes="field">
+                                <TextBlock Classes="label">
+                                    <Run Text="Mã khách hàng" /><Run Text=" *" Foreground="{StaticResource Danger}" />
+                                </TextBlock>
+                                <TextBox x:Name="CodeBox" Text="{Binding Code}" PlaceholderText="VD: KH001" MaxLength="20" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Classes="field">
+                                <TextBlock Classes="label">
+                                    <Run Text="Tên khách hàng" /><Run Text=" *" Foreground="{StaticResource Danger}" />
+                                </TextBlock>
+                                <TextBox Text="{Binding Name}" PlaceholderText="VD: Nguyễn Văn An" MaxLength="200" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="2" Classes="field">
+                                <TextBlock Text="Số điện thoại" Classes="label" />
+                                <TextBox Text="{Binding Phone}" PlaceholderText="VD: 0901 234 567" MaxLength="20" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Classes="field">
+                                <TextBlock Text="Email" Classes="label" />
+                                <TextBox Text="{Binding Email}" PlaceholderText="VD: an.nguyen@gmail.com" MaxLength="200" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Classes="field">
+                                <TextBlock Text="Địa chỉ" Classes="label" />
+                                <TextBox Text="{Binding Address}" Classes="multiline" MaxLength="500"
+                                         PlaceholderText="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Classes="divider" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="24,16">
+                            <Button Classes="secondary" Content="Huỷ" MinWidth="88" Command="{Binding CancelCommand}"
+                                    IsCancel="True" />
+                            <Button Classes="accent" MinWidth="120" Command="{Binding SaveCommand}" IsDefault="True"
+                                    Content="Lưu khách hàng" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

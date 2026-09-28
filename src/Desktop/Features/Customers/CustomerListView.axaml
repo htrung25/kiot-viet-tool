@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.Features.Customers"
+             xmlns:dto="using:KiotVietTool.Application.Features.Customers"
+             x:Class="KiotVietTool.Desktop.Features.Customers.CustomerListView"
+             x:DataType="vm:CustomerListViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,*" RowSpacing="20">
+        <!-- Page header -->
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="accent" VerticalAlignment="Center" Command="{Binding AddCommand}"
+                    HotKey="Ctrl+N" ToolTip.Tip="Thêm khách hàng (Ctrl+N)">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource Icon.Plus}" />
+                    <TextBlock Text="Thêm khách hàng" />
+                </StackPanel>
+            </Button>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Khách hàng" Classes="h1" />
+                <TextBlock Text="Danh sách khách hàng của cửa hàng." Classes="subtitle" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Table card -->
+        <Border Grid.Row="1" Classes="card">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <DockPanel Margin="16,14">
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" Classes="caption"
+                               VerticalAlignment="Center" Margin="16,0,4,0" />
+                    <TextBox x:Name="SearchBox" Text="{Binding Keyword}" Classes="clearButton" Width="360"
+                             HorizontalAlignment="Left" PlaceholderText="Tìm theo mã, tên hoặc số điện thoại">
+                        <TextBox.InnerLeftContent>
+                            <PathIcon Classes="leading" Data="{StaticResource Icon.Search}" />
+                        </TextBox.InnerLeftContent>
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
+                            <KeyBinding Gesture="Escape" Command="{Binding ClearSearchCommand}" />
+                        </TextBox.KeyBindings>
+                    </TextBox>
+                </DockPanel>
+                <Border Grid.Row="1" Classes="divider" />
+
+                <Panel Grid.Row="2">
+                    <DataGrid x:Name="Grid" ItemsSource="{Binding Customers}"
+                              SelectedItem="{Binding SelectedCustomer}" IsVisible="{Binding HasCustomers}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                              DoubleTapped="Grid_DoubleTapped">
+                        <DataGrid.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding EditCommand}"
+                                        CommandParameter="{Binding SelectedCustomer}" />
+                            <KeyBinding Gesture="Delete" Command="{Binding DeleteCommand}"
+                                        CommandParameter="{Binding SelectedCustomer}" />
+                        </DataGrid.KeyBindings>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="MÃ KH" Width="104" SortMemberPath="Code">
+                                <DataTemplate x:DataType="dto:CustomerDto">
+                                    <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="KHÁCH HÀNG" Width="3*" MinWidth="180" SortMemberPath="Name">
+                                <DataTemplate x:DataType="dto:CustomerDto">
+                                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                                        <TextBlock Text="{Binding Email}" Classes="caption"
+                                                   IsVisible="{Binding Email, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="ĐIỆN THOẠI" Binding="{Binding Phone}"
+                                                x:DataType="dto:CustomerDto" Width="140" MinWidth="140" />
+                            <DataGridTemplateColumn Header="ĐỊA CHỈ" Width="3*" MinWidth="120" SortMemberPath="Address">
+                                <DataTemplate x:DataType="dto:CustomerDto">
+                                    <!-- Long addresses are trimmed; tooltip shows the full text -->
+                                    <TextBlock Text="{Binding Address}" ToolTip.Tip="{Binding Address}"
+                                               VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="88" CanUserResize="False" CanUserSort="False">
+                                <DataTemplate x:DataType="dto:CustomerDto">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right"
+                                                Margin="0,0,12,0">
+                                        <Button Classes="icon" ToolTip.Tip="Sửa"
+                                                Command="{Binding $parent[UserControl].((vm:CustomerListViewModel)DataContext).EditCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.Edit}" />
+                                        </Button>
+                                        <Button Classes="icon danger" ToolTip.Tip="Xoá"
+                                                Command="{Binding $parent[UserControl].((vm:CustomerListViewModel)DataContext).DeleteCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.Delete}" />
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- First run: no customers at all -->
+                    <StackPanel IsVisible="{Binding ShowEmptyState}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="360">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Customers}" />
+                        </Border>
+                        <TextBlock Text="Chưa có khách hàng nào" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="Thêm khách hàng đầu tiên để bắt đầu quản lý thông tin liên hệ."
+                                   Classes="subtitle" TextAlignment="Center" />
+                        <Button Classes="accent" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                Command="{Binding AddCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource Icon.Plus}" />
+                                <TextBlock Text="Thêm khách hàng" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Search returned nothing -->
+                    <StackPanel IsVisible="{Binding ShowNoResults}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="360">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Search}" />
+                        </Border>
+                        <TextBlock Text="Không tìm thấy khách hàng" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="Thử từ khoá khác, hoặc tìm theo mã hay số điện thoại."
+                                   Classes="subtitle" TextAlignment="Center" />
+                        <Button Classes="secondary" Content="Xoá tìm kiếm" HorizontalAlignment="Center"
+                                Margin="0,6,0,0" Command="{Binding ClearSearchCommand}" />
+                    </StackPanel>
+                </Panel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.Features.Auth"
+             x:Class="KiotVietTool.Desktop.Features.Auth.LoginView"
+             x:DataType="vm:LoginViewModel">
+    <Grid ColumnDefinitions="5*,6*">
+        <!-- Brand panel -->
+        <Border Background="{StaticResource Brand.Gradient}" Padding="48,44">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12">
+                    <Border Width="40" Height="40" CornerRadius="10" Background="#26FFFFFF">
+                        <PathIcon Data="{StaticResource Icon.Store}" Width="22" Height="22" Foreground="White" />
+                    </Border>
+                    <TextBlock Text="KiotViet Tool" FontSize="18" FontWeight="SemiBold" Foreground="White"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock DockPanel.Dock="Bottom" Text="Dữ liệu được lưu an toàn trên máy của bạn."
+                           FontSize="13" Foreground="#B3FFFFFF" />
+                <StackPanel VerticalAlignment="Center" Spacing="14" MaxWidth="380" HorizontalAlignment="Left">
+                    <TextBlock Text="Quản lý cửa hàng gọn gàng, nhanh chóng." FontSize="28" FontWeight="SemiBold"
+                               Foreground="White" TextWrapping="Wrap" LineHeight="36" />
+                    <TextBlock Text="Công cụ hỗ trợ quản lý khách hàng và dữ liệu bán hàng kết nối với KiotViet."
+                               FontSize="15" Foreground="#CCFFFFFF" TextWrapping="Wrap" LineHeight="22" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Form -->
+        <Border Grid.Column="1" Background="{StaticResource Bg.Surface}">
+            <StackPanel Width="360" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Đăng nhập" Classes="h1" />
+                    <TextBlock Text="Nhập tài khoản quản trị để tiếp tục." Classes="subtitle" />
+                </StackPanel>
+
+                <Border Classes="alert error"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <DockPanel>
+                        <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                        <TextBlock Text="{Binding ErrorMessage}" />
+                    </DockPanel>
+                </Border>
+
+                <StackPanel Classes="field">
+                    <TextBlock Text="Tên đăng nhập" Classes="label" />
+                    <TextBox x:Name="UsernameBox" Text="{Binding Username}" PlaceholderText="Nhập tên đăng nhập" />
+                </StackPanel>
+                <StackPanel Classes="field">
+                    <TextBlock Text="Mật khẩu" Classes="label" />
+                    <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton"
+                             PlaceholderText="Nhập mật khẩu" />
+                </StackPanel>
+
+                <Button Classes="accent" Command="{Binding SignInCommand}" IsDefault="True"
+                        HorizontalAlignment="Stretch" MinHeight="40" Margin="0,4,0,0">
+                    <Panel>
+                        <TextBlock Text="Đăng nhập" IsVisible="{Binding !SignInCommand.IsRunning}" />
+                        <TextBlock Text="Đang đăng nhập…" IsVisible="{Binding SignInCommand.IsRunning}" />
+                    </Panel>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

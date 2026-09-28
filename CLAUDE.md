@@ -7,36 +7,38 @@ Dev machine is macOS: the app runs there too (`dotnet run`), the release exe is 
 
 ```bash
 dotnet build                                                     # must stay at 0 warnings
-dotnet run --project src/KiotVietTool.Desktop                    # launch the UI (Debug: F12 = DevTools)
-dotnet publish src/KiotVietTool.Desktop -p:PublishProfile=win-x64   # → artifacts/publish/win-x64/
+dotnet run --project src/Desktop                    # launch the UI (Debug: F12 = DevTools)
+dotnet publish src/Desktop -p:PublishProfile=win-x64   # → artifacts/publish/win-x64/
 dotnet tool restore && dotnet ef migrations add <Name> \
-  -p src/KiotVietTool.Infrastructure -s src/KiotVietTool.Infrastructure -o Persistence/Migrations
+  -p src/Infrastructure -s src/Infrastructure -o Persistence/Migrations
 ```
 
 The repo has no test projects (removed deliberately by the owner; do not add them unless asked).
 Verify with `dotnet build`, a throwaway script in your scratchpad (file-based `dotnet run x.cs` with
-`#:project` + `#:property PublishAot=false`), and by launching the app and checking the log. Screen capture is not available;
-ask the user to eyeball the UI. Windows-only code paths (P/Invoke to user32) are guarded by `OperatingSystem.IsWindows()`.
+`#:project` + `#:property PublishAot=false`), and by launching the app and checking the log. Screen capture is not available,
+so verify UI by rendering headlessly (see "Verify UI visually" below). Windows-only code paths (P/Invoke to user32) are guarded by `OperatingSystem.IsWindows()`.
 
 ## Architecture (Clean Architecture)
 
 Dependency rule: `Desktop → Infrastructure → Application → Domain`. Never reference the other way.
+Folders are `src/<Layer>/` (short names); project files, assembly names and namespaces keep the `KiotVietTool.<Layer>` prefix.
 
 | Project | TFM | Contains | References |
 |---|---|---|---|
 | Domain | net10.0 | Entities with invariants; throw `DomainException` (Vietnamese, user-facing message) | nothing |
 | Application | net10.0 | `Features/<Feature>/` (service, its ports: repository/hasher interfaces, DTOs), `Common/` (Result) | Domain, DI.Abstractions |
 | Infrastructure | net10.0 | `Persistence/` (AppDbContext, DatabaseInitializer, DatabaseOptions, Configurations, Migrations), `Features/<Feature>/` (repositories, feature services/options) | Application, EF Core SQLite |
-| Desktop | net10.0 | `Program.cs`, `App.axaml(.cs)` (composition root), `Shell/` (MainWindow + MainViewModel), `Features/<Feature>/` (View + ViewModel side by side), `Common/` (ViewModelBase, Navigation, Dialogs, Platform), `Resources/` | Infrastructure, Avalonia |
+| Desktop | net10.0 | `Program.cs`, `App.axaml(.cs)` (composition root), `Shell/` (MainWindow + MainViewModel), `Features/<Feature>/` (View + ViewModel side by side), `Common/` (ViewModelBase, Navigation, Dialogs, Notifications, Platform), `Resources/` (Colors, Icons, Styles) | Infrastructure, Avalonia |
 
 Key decisions:
 - **Repositories use `IDbContextFactory`**: each method is its own short-lived DbContext (no long-lived context in a desktop app). Entities returned are detached; `UpdateAsync` attaches via `Update()`.
 - **Validation lives in the Domain entity**; Application services catch `DomainException` and return `Result.Failure`. Services never throw for expected business errors.
 - **Time** via `TimeProvider` (registered by `AddApplication`).
 - **Navigation is ViewModel-first**: `INavigationService.NavigateToAsync<TVm>(parameter)` sets `CurrentViewModel`; `MainWindow`'s `ContentControl` renders it through `Application.DataTemplates` in `App.axaml`. VMs override `ViewModelBase.OnNavigatedToAsync`. Features never navigate into another feature by type: use `NavigateHomeAsync()`; which screen is Login / ChangePassword / Home is declared once as `NavigationRoutes` in `App.CreateHost`.
-- **Dialogs** only through async `IDialogService` (Avalonia has no MessageBox; `Common/Dialogs/MessageDialog` implements it).
+- **Dialogs** only through async `IDialogService` (Avalonia has no MessageBox; `Common/Dialogs/MessageDialog` implements it). Confirm with a question title, the consequence as message and a verb on the button (`ConfirmAsync("Xoá khách hàng?", "...", "Xoá khách hàng", destructive: true)`), never a bare "OK".
+- **Success feedback** is a toast via `INotificationService.ShowSuccess` (non-blocking); errors that need attention use a dialog or an inline `Border.alert.error`.
 - **Startup**: `Program.Main` does the single-instance check (named Mutex: `Local\` on Windows, `Global\` on Unix because Unix `Local\` is per process session; activation signal via named pipe) and defines `%LOCALAPPDATA%` on non-Windows. `App.OnFrameworkInitializationCompleted` registers global exception handlers (`Dispatcher.UIThread.UnhandledException`, `AppDomain`, `TaskScheduler`), builds the Generic Host (`UseContentRoot(AppContext.BaseDirectory)`, Serilog) and shows `MainWindow` from DI; on `Opened` it starts the host, runs `InitializeDatabaseAsync()` (→ `Persistence/DatabaseInitializer`: migrate + seed default admin) and navigates to Login.
-- **Auth** (single local account): `UserAccount` in SQLite, password hashed with PBKDF2-SHA256 (`Infrastructure/Auth/Pbkdf2PasswordHasher`, 600k iterations, format `pbkdf2-sha256$iter$salt$hash`). `Verify` trusts nothing from the stored string: exact 16-byte salt, exact 32-byte hash (output length is a constant), iterations 100k–10M; anything else is rejected and logged as a warning (never log the hash). Default admin comes from `Auth:DefaultAdminUsername/Password` in appsettings and is seeded only when the table is empty, with `MustChangePassword = true`. `IUserSession` (singleton, Application) holds the signed-in user; only `IAuthService` changes it. `NavigationService` is the auth guard: not signed in → `LoginViewModel`, temporary password → `ChangePasswordViewModel`; view models reachable anonymously implement `IAllowAnonymous`.
+- **Auth** (single local account): `UserAccount` in SQLite, password hashed with PBKDF2-SHA256 (`Infrastructure/Features/Auth/Pbkdf2PasswordHasher`, 600k iterations, format `pbkdf2-sha256$iter$salt$hash`). `Verify` trusts nothing from the stored string: exact 16-byte salt, exact 32-byte hash (output length is a constant), iterations 100k–10M; anything else is rejected and logged as a warning (never log the hash). Default admin comes from `Auth:DefaultAdminUsername/Password` in appsettings and is seeded only when the table is empty, with `MustChangePassword = true`. `IUserSession` (singleton, Application) holds the signed-in user; only `IAuthService` changes it. `NavigationService` is the auth guard: not signed in → `LoginViewModel`, temporary password → `ChangePasswordViewModel`; view models reachable anonymously implement `IAllowAnonymous`.
 - **Config**: `appsettings.json` is excluded from the single-file bundle and sits beside the exe. `%LOCALAPPDATA%` is expanded in `Database:Path` and in the Serilog file path; use `/` separators (works on both OSes). Serilog `"Using"` must list sink assemblies (single-file cannot scan).
 - Central Package Management: versions only in `Directory.Packages.props`; `dotnet add package` writes there automatically.
 - Build output goes to `artifacts/` (`ArtifactsPath`), not `bin/obj`.
@@ -56,7 +58,9 @@ Key decisions:
 - No business logic in code-behind or ViewModels; ViewModels only call Application services.
 - MVVM via CommunityToolkit.Mvvm partial properties: `[ObservableProperty] public partial T X { get; set; }` and `[RelayCommand]` on `async Task XAsync(CancellationToken)`.
 - No hardcoded config values; use `appsettings.json` + `IOptions<T>` (bind + validate in the layer's `DependencyInjection.cs`).
-- Nullable warnings are errors (`Directory.Build.props`). Keep `dotnet build` at 0 warnings; unused usings (IDE0005) and broken doc `cref`s are reported, fix with `dotnet format style KiotVietTool.slnx --diagnostics IDE0005 --exclude src/KiotVietTool.Infrastructure/Persistence/Migrations`.
+- Nullable warnings are errors (`Directory.Build.props`). Keep `dotnet build` at 0 warnings; unused usings (IDE0005) and broken doc `cref`s are reported, fix with `dotnet format style KiotVietTool.slnx --diagnostics IDE0005 --exclude src/Infrastructure/Persistence/Migrations`.
 - Namespace gotcha: inside `KiotVietTool.*`, `Application` resolves to the `KiotVietTool.Application` namespace; write `Avalonia.Application` explicitly in Desktop.
-- Avalonia: styles use selectors + classes (`Resources/Styles.axaml`); `DataGridTextColumn` needs its own `x:DataType`; no MouseBinding, so double-click is forwarded to a command in code-behind (view glue only).
+- **UI design system**: colors only from `Resources/Colors.axaml` tokens (`{StaticResource Text.Muted}`, `Primary`, `Danger`...), never hex in views; icons are `PathIcon` with `Icon.*` geometries from `Resources/Icons.axaml` (Material Design Icons). Style classes in `Resources/Styles.axaml`: buttons `accent` (primary, Fluent), `secondary`, `danger`, `ghost`, `icon`; text `h1`, `h2`, `subtitle`, `caption`, `label`; layout `Border.card`, `Border.divider`, `Border.alert.error|warning`, `StackPanel.field` (label above input), `Grid.page` (page margins). Pages inside the shell = header (h1 + subtitle + primary action on the right) then a card; lists need an empty state and a no-results state. `ShowChrome` in `MainViewModel` hides the sidebar for full-screen flows (login, forced password change).
+- **Verify UI visually**: render screens headlessly (Avalonia.Headless + Skia, `CaptureRenderedFrame()`) from a throwaway scratchpad script and inspect the PNGs at 1200×760 and the 960×600 minimum; don't ship layout changes unseen.
+- Avalonia: styles use selectors + classes (`Resources/Styles.axaml`); a selector list must target one control type (no `TextBlock, PathIcon` sharing a setter); `DataGridTextColumn` needs its own `x:DataType`; no MouseBinding, so double-click is forwarded to a command in code-behind (view glue only).
 - Keep `PublishTrimmed=false` (EF Core, DI and Serilog configuration rely on reflection).
