@@ -53,8 +53,8 @@ public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Appli
         try
         {
             await _host.StartAsync();
-            await services.MigrateDatabaseAsync();
-            await services.GetRequiredService<INavigationService>().NavigateToAsync<CustomerListViewModel>();
+            await services.InitializeDatabaseAsync();
+            await services.GetRequiredService<INavigationService>().NavigateToAsync<LoginViewModel>();
             Log.Information("Application started, version {Version}", typeof(App).Assembly.GetName().Version);
         }
         catch (Exception ex)
@@ -90,6 +90,8 @@ public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Appli
 
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<MainWindow>();
+                services.AddTransient<LoginViewModel>();
+                services.AddTransient<ChangePasswordViewModel>();
                 services.AddTransient<CustomerListViewModel>();
                 services.AddTransient<CustomerEditViewModel>();
             })

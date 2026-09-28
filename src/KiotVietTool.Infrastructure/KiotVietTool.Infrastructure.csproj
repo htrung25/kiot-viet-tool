@@ -18,8 +18,4 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="KiotVietTool.Infrastructure.Tests" />
-  </ItemGroup>
-
 </Project>

@@ -7,6 +7,12 @@
 
     <!-- ViewModel → View mapping used by INavigationService. Add one line per new screen. -->
     <Application.DataTemplates>
+        <DataTemplate DataType="vm:LoginViewModel">
+            <views:LoginView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:ChangePasswordViewModel">
+            <views:ChangePasswordView />
+        </DataTemplate>
         <DataTemplate DataType="vm:CustomerListViewModel">
             <views:CustomerListView />
         </DataTemplate>

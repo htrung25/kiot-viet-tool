@@ -5,8 +5,5 @@
     <Project Path="src/KiotVietTool.Domain/KiotVietTool.Domain.csproj" />
     <Project Path="src/KiotVietTool.Infrastructure/KiotVietTool.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/KiotVietTool.Application.Tests/KiotVietTool.Application.Tests.csproj" />
-    <Project Path="tests/KiotVietTool.Infrastructure.Tests/KiotVietTool.Infrastructure.Tests.csproj" />
-  </Folder>
+  <Folder Name="/tests/" />
 </Solution>

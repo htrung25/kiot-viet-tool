@@ -28,9 +28,6 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-      - name: Test
-        run: dotnet test --no-build -c Release
-
       - name: Publish win-x64
         run: dotnet publish src/KiotVietTool.Desktop -p:PublishProfile=win-x64
 

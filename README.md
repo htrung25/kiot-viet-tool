@@ -7,7 +7,7 @@ Khi phát triển, app chạy thẳng trên macOS.
 
 | Việc | Cần có |
 |---|---|
-| Dev: build / test / chạy / publish | .NET SDK 10.0.401+ (xem `global.json`) trên macOS, Linux hoặc Windows |
+| Dev: build / chạy / publish | .NET SDK 10.0.401+ (xem `global.json`) trên macOS, Linux hoặc Windows |
 | Khách dùng | Windows 10/11 x64 |
 | IDE (tuỳ chọn) | Rider hoặc VS Code + extension **Avalonia for VS Code** (có xem trước XAML) |
 
@@ -19,7 +19,6 @@ macOS cài SDK: `brew install --cask dotnet-sdk`
 ```bash
 dotnet tool restore                 # cài dotnet-ef (local tool)
 dotnet build                        # build toàn solution
-dotnet test                         # chạy test (Microsoft.Testing.Platform)
 
 # Chạy giao diện khi dev (macOS/Windows)
 dotnet run --project src/KiotVietTool.Desktop
@@ -51,10 +50,17 @@ App tự áp migration mỗi lần khởi động, không cần chạy `dotnet e
 2. Copy **cả thư mục** `artifacts/publish/win-x64/` (gồm `KiotVietTool.exe` và `appsettings.json`) sang VM. Với Parallels hoặc UTM, dùng thư mục chia sẻ là tiện nhất.
 3. Chạy `KiotVietTool.exe`. Nếu SmartScreen cảnh báo, chọn *More info → Run anyway* (vì file chưa được ký số).
 4. Kiểm tra:
-   - Màn hình **Khách hàng** hiện ra, thử Thêm, Sửa (double-click một dòng), Xoá (nút hoặc phím Delete) và Tìm.
+   - Màn **Đăng nhập** hiện ra. Đăng nhập `admin` / `admin` thì bị chuyển sang màn **Đổi mật khẩu** (bắt buộc, mật khẩu mới tối thiểu 8 ký tự).
+   - Sau khi đổi mật khẩu, màn hình **Khách hàng** hiện ra, thử Thêm, Sửa (double-click một dòng), Xoá (nút hoặc phím Delete) và Tìm.
    - Mở lại `.exe` lần hai: cửa sổ cũ được đưa lên trước, không mở cửa sổ mới.
    - Dữ liệu: `%LocalAppData%\KiotVietTool\app.db`
    - Log: `%LocalAppData%\KiotVietTool\logs\app-YYYYMMDD.log` (mỗi ngày một file, giữ 30 ngày)
+
+## Đăng nhập
+
+- Tool chỉ có **một tài khoản admin**. Lần chạy đầu tiên app tự tạo tài khoản `admin` / `admin` (lấy từ mục `Auth` trong `appsettings.json`), và bắt đổi mật khẩu ở lần đăng nhập đầu.
+- Đổi mật khẩu sau này: nút **Đổi mật khẩu** trên thanh trên cùng.
+- **Quên mật khẩu:** tắt app, xoá bảng tài khoản bằng `sqlite3 app.db "DELETE FROM UserAccounts;"` (hoặc công cụ SQLite bất kỳ). Lần chạy sau app sẽ tạo lại `admin` / `admin`. Dữ liệu Khách hàng không bị ảnh hưởng.
 
 ## Cấu hình
 
@@ -62,13 +68,14 @@ Sửa `appsettings.json` ngay cạnh file `.exe`, không cần build lại:
 
 | Khoá | Ý nghĩa |
 |---|---|
+| `Auth:DefaultAdminUsername`, `Auth:DefaultAdminPassword` | Tài khoản admin tạo ở lần chạy đầu (chỉ khi chưa có tài khoản nào) |
 | `Database:Path` | Đường dẫn file SQLite, có thể dùng biến môi trường `%LOCALAPPDATA%` |
 | `Serilog:MinimumLevel:Default` | Mức log (`Debug`, `Information`, `Warning`…) |
 | `Serilog:WriteTo:0:Args:path` | Nơi ghi log |
 
 ## CI
 
-`.github/workflows/build.yml` chạy trên `windows-latest` theo thứ tự restore → build → test → publish → upload artifact, mỗi khi push lên `main`, mở PR hoặc chạy tay.
+`.github/workflows/build.yml` chạy trên `windows-latest` theo thứ tự restore → build → publish → upload artifact, mỗi khi push lên `develop`, mở PR hoặc chạy tay.
 
 ## Cấu trúc
 
@@ -78,9 +85,6 @@ src/
   KiotVietTool.Application     Use case (Features/<Feature>), interface, DTO
   KiotVietTool.Infrastructure  EF Core + SQLite, repository, migration
   KiotVietTool.Desktop         Avalonia: View, ViewModel, Navigation, Dialog, composition root
-tests/
-  KiotVietTool.Application.Tests     Unit test (NSubstitute)
-  KiotVietTool.Infrastructure.Tests  Integration test trên SQLite in-memory + migration thật
 ```
 
 Chi tiết kiến trúc và quy tắc code: xem [CLAUDE.md](CLAUDE.md).

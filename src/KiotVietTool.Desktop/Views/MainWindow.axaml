@@ -5,5 +5,18 @@
         x:DataType="vm:MainViewModel"
         Title="KiotViet Tool" Width="1000" Height="640" MinWidth="720" MinHeight="480"
         WindowStartupLocation="CenterScreen">
-    <ContentControl Margin="20" Content="{Binding Navigation.CurrentViewModel}" />
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Classes="topBar" IsVisible="{Binding IsAuthenticated}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Classes="buttons">
+                    <Button Content="Đổi mật khẩu" Command="{Binding ChangePasswordCommand}" />
+                    <Button Content="Đăng xuất" Command="{Binding SignOutCommand}" />
+                </StackPanel>
+                <TextBlock VerticalAlignment="Center">
+                    <Run Text="Xin chào, " /><Run Text="{Binding Username}" FontWeight="SemiBold" />
+                </TextBlock>
+            </DockPanel>
+        </Border>
+        <ContentControl Margin="20" Content="{Binding Navigation.CurrentViewModel}" />
+    </DockPanel>
 </Window>
