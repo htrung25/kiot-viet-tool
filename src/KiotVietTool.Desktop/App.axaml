@@ -1,23 +1,23 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
-             xmlns:views="using:KiotVietTool.Desktop.Views"
+             xmlns:auth="using:KiotVietTool.Desktop.Features.Auth"
+             xmlns:customers="using:KiotVietTool.Desktop.Features.Customers"
              x:Class="KiotVietTool.Desktop.App"
              RequestedThemeVariant="Light">
 
     <!-- ViewModel → View mapping used by INavigationService. Add one line per new screen. -->
     <Application.DataTemplates>
-        <DataTemplate DataType="vm:LoginViewModel">
-            <views:LoginView />
+        <DataTemplate DataType="auth:LoginViewModel">
+            <auth:LoginView />
         </DataTemplate>
-        <DataTemplate DataType="vm:ChangePasswordViewModel">
-            <views:ChangePasswordView />
+        <DataTemplate DataType="auth:ChangePasswordViewModel">
+            <auth:ChangePasswordView />
         </DataTemplate>
-        <DataTemplate DataType="vm:CustomerListViewModel">
-            <views:CustomerListView />
+        <DataTemplate DataType="customers:CustomerListViewModel">
+            <customers:CustomerListView />
         </DataTemplate>
-        <DataTemplate DataType="vm:CustomerEditViewModel">
-            <views:CustomerEditView />
+        <DataTemplate DataType="customers:CustomerEditViewModel">
+            <customers:CustomerEditView />
         </DataTemplate>
     </Application.DataTemplates>
 

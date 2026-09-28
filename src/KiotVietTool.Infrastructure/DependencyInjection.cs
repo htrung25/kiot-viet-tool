@@ -1,13 +1,13 @@
-using KiotVietTool.Application.Abstractions;
-using KiotVietTool.Domain.Auth;
-using KiotVietTool.Infrastructure.Auth;
+using KiotVietTool.Application.Features.Auth;
+using KiotVietTool.Application.Features.Customers;
+using KiotVietTool.Infrastructure.Features.Auth;
+using KiotVietTool.Infrastructure.Features.Customers;
 using KiotVietTool.Infrastructure.Persistence;
-using KiotVietTool.Infrastructure.Repositories;
+
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace KiotVietTool.Infrastructure;
@@ -36,29 +36,11 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddTransient<ICustomerRepository, CustomerRepository>();
         services.AddTransient<IUserAccountRepository, UserAccountRepository>();
+        services.AddTransient<DatabaseInitializer>();
         return services;
     }
 
     /// <summary>Creates the DB folder, applies pending EF migrations and seeds the default admin if no account exists.</summary>
-    public static async Task InitializeDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
-    {
-        var path = services.GetRequiredService<IOptions<DatabaseOptions>>().Value.ResolvedPath;
-        var directory = Path.GetDirectoryName(Path.GetFullPath(path));
-        if (directory is not null) Directory.CreateDirectory(directory);
-
-        await using var db = await services.GetRequiredService<IDbContextFactory<AppDbContext>>()
-            .CreateDbContextAsync(cancellationToken);
-        await db.Database.MigrateAsync(cancellationToken);
-
-        if (await db.UserAccounts.AnyAsync(cancellationToken)) return;
-
-        var auth = services.GetRequiredService<IOptions<AuthOptions>>().Value;
-        var hash = services.GetRequiredService<IPasswordHasher>().Hash(auth.DefaultAdminPassword);
-        var now = services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
-        db.UserAccounts.Add(UserAccount.CreateWithTemporaryPassword(auth.DefaultAdminUsername, hash, now));
-        await db.SaveChangesAsync(cancellationToken);
-
-        services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DependencyInjection))
-            .LogInformation("Seeded default admin account {Username}", auth.DefaultAdminUsername);
-    }
+    public static Task InitializeDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default) =>
+        services.GetRequiredService<DatabaseInitializer>().InitializeAsync(cancellationToken);
 }

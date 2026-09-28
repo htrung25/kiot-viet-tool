@@ -1,15 +1,22 @@
 using System.Runtime.InteropServices;
+
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+
 using KiotVietTool.Application;
-using KiotVietTool.Desktop.Services;
-using KiotVietTool.Desktop.ViewModels;
-using KiotVietTool.Desktop.Views;
+using KiotVietTool.Desktop.Common.Dialogs;
+using KiotVietTool.Desktop.Common.Navigation;
+using KiotVietTool.Desktop.Common.Platform;
+using KiotVietTool.Desktop.Features.Auth;
+using KiotVietTool.Desktop.Features.Customers;
+using KiotVietTool.Desktop.Shell;
 using KiotVietTool.Infrastructure;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
 using Serilog;
 
 namespace KiotVietTool.Desktop;
@@ -85,6 +92,10 @@ public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Appli
                 services.AddApplication();
                 services.AddInfrastructure(context.Configuration);
 
+                services.AddSingleton(new NavigationRoutes(
+                    Login: typeof(LoginViewModel),
+                    ChangePassword: typeof(ChangePasswordViewModel),
+                    Home: typeof(CustomerListViewModel)));
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
 

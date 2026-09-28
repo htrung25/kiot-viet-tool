@@ -1,0 +1,26 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+using KiotVietTool.Application.Features.Auth;
+using KiotVietTool.Desktop.Common;
+using KiotVietTool.Desktop.Common.Navigation;
+
+namespace KiotVietTool.Desktop.Features.Auth;
+
+public sealed partial class LoginViewModel(IAuthService authService, INavigationService navigation)
+    : ViewModelBase, IAllowAnonymous
+{
+    [ObservableProperty] public partial string Username { get; set; } = "";
+    [ObservableProperty] public partial string Password { get; set; } = "";
+    [ObservableProperty] public partial string? ErrorMessage { get; set; }
+
+    [RelayCommand]
+    async Task SignInAsync(CancellationToken cancellationToken)
+    {
+        var result = await authService.SignInAsync(Username, Password, cancellationToken);
+        Password = "";
+        ErrorMessage = result.Error;
+        // The navigation guard redirects to Change password when the password is temporary.
+        if (result.IsSuccess) await navigation.NavigateHomeAsync(cancellationToken);
+    }
+}

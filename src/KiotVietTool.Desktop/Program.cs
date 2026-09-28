@@ -1,5 +1,7 @@
 using Avalonia;
 
+using KiotVietTool.Desktop.Common.Platform;
+
 namespace KiotVietTool.Desktop;
 
 internal static class Program

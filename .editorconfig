@@ -394,6 +394,8 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 dotnet_diagnostic.CA1852.severity = warning
 # Serilog message templates, not string interpolation
 dotnet_diagnostic.CA2254.severity = warning
+# Unused using directives
+dotnet_diagnostic.IDE0005.severity = warning
 
 # EF Core generated migrations
 [**/Migrations/*.cs]

@@ -79,12 +79,24 @@ Sửa `appsettings.json` ngay cạnh file `.exe`, không cần build lại:
 
 ## Cấu trúc
 
+Mọi layer đều chia theo feature (`Features/<Tên>/`), phần dùng chung đặt ở `Common/`.
+
 ```
 src/
-  KiotVietTool.Domain          Entity, quy tắc nghiệp vụ (không phụ thuộc gì)
-  KiotVietTool.Application     Use case (Features/<Feature>), interface, DTO
-  KiotVietTool.Infrastructure  EF Core + SQLite, repository, migration
-  KiotVietTool.Desktop         Avalonia: View, ViewModel, Navigation, Dialog, composition root
+  KiotVietTool.Domain/          Entity + quy tắc nghiệp vụ, không phụ thuộc gì
+    Auth/  Customers/  Common/
+  KiotVietTool.Application/     Use case
+    Features/Auth/  Features/Customers/   (service, interface repository, DTO)
+    Common/                               (Result)
+  KiotVietTool.Infrastructure/  EF Core + SQLite
+    Persistence/                          (DbContext, DatabaseInitializer, Configurations, Migrations)
+    Features/Auth/  Features/Customers/   (repository, hash mật khẩu)
+  KiotVietTool.Desktop/         Avalonia
+    Program.cs  App.axaml(.cs)            (composition root)
+    Shell/                                (MainWindow, thanh trên cùng)
+    Features/Auth/  Features/Customers/   (View + ViewModel đặt cạnh nhau)
+    Common/                               (ViewModelBase, Navigation, Dialogs, Platform)
+    Resources/                            (Styles)
 ```
 
 Chi tiết kiến trúc và quy tắc code: xem [CLAUDE.md](CLAUDE.md).
