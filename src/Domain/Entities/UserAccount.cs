@@ -38,18 +38,12 @@ public sealed class UserAccount
         MustChangePassword = false;
         UpdatedAtUtc = nowUtc;
     }
-
-    /// <summary>
-    /// Same password, stronger hash (e.g. more iterations). Unlike <see cref="ChangePassword"/> it keeps
-    /// <see cref="MustChangePassword"/>: a default password is still a default password.
-    /// </summary>
     public void UpgradePasswordHash(string newPasswordHash, DateTime nowUtc)
     {
         PasswordHash = newPasswordHash;
         UpdatedAtUtc = nowUtc;
     }
 
-    /// <summary>Password policy, checked on the plain text before hashing.</summary>
     public static void EnsureValidNewPassword(string password)
     {
         if (password.Length < PasswordMinLength)
