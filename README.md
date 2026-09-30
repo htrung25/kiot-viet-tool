@@ -92,7 +92,7 @@ src/
     Repositories/  Services/ (hash mật khẩu)  Options/
   Desktop/         (KiotVietTool.Desktop)         Avalonia
     Program.cs  App.axaml(.cs)            (composition root)
-    Views/  ViewModels/  Models/  Services/ (Navigation, Dialog, Notification, SingleInstance)
+    Views/  ViewModels/  Models/  Services/ (Navigation, Dialog, Notification, SingleInstanceService)
     Resources/                            (Colors, Icons, Styles: design token)
 ```
 

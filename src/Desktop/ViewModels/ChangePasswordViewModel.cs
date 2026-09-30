@@ -9,7 +9,7 @@ namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class ChangePasswordViewModel(
     IAuthService authService,
-    IUserSession session,
+    IUserSessionService session,
     INavigationService navigation,
     INotificationService notifications) : ViewModelBase
 {
@@ -25,7 +25,7 @@ public sealed partial class ChangePasswordViewModel(
     async Task SaveAsync(CancellationToken cancellationToken)
     {
         var result = await authService.ChangePasswordAsync(
-            new ChangePasswordRequest(CurrentPassword, NewPassword, ConfirmPassword), cancellationToken);
+            new ChangePasswordDto(CurrentPassword, NewPassword, ConfirmPassword), cancellationToken);
         ErrorMessage = result.Error;
         if (!result.IsSuccess) return;
 

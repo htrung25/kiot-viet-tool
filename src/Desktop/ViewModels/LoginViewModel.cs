@@ -7,7 +7,7 @@ using KiotVietTool.Desktop.Services;
 namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class LoginViewModel(IAuthService authService, INavigationService navigation)
-    : ViewModelBase, IAllowAnonymous
+    : ViewModelBase, IAnonymousViewModel
 {
     [ObservableProperty] public partial string Username { get; set; } = "";
     [ObservableProperty] public partial string Password { get; set; } = "";

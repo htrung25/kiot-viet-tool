@@ -13,7 +13,7 @@ internal sealed class DatabaseInitializer(
     IDbContextFactory<AppDbContext> dbFactory,
     IOptions<DatabaseOptions> databaseOptions,
     IOptions<AuthOptions> authOptions,
-    IPasswordHasher passwordHasher,
+    IPasswordHasherService passwordHasher,
     TimeProvider timeProvider,
     ILogger<DatabaseInitializer> logger)
 {

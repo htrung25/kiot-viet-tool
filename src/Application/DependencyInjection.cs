@@ -12,8 +12,8 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(TimeProvider.System);
 
-        services.AddSingleton<UserSession>();
-        services.AddSingleton<IUserSession>(sp => sp.GetRequiredService<UserSession>());
+        services.AddSingleton<UserSessionService>();
+        services.AddSingleton<IUserSessionService>(sp => sp.GetRequiredService<UserSessionService>());
         services.AddTransient<IAuthService, AuthService>();
         return services;
     }

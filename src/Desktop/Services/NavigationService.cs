@@ -1,13 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Desktop.Models;
 using KiotVietTool.Desktop.ViewModels;
 
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KiotVietTool.Desktop.Services;
 
-public sealed partial class NavigationService(IServiceProvider services, IUserSession session, NavigationRoutes routes)
+public sealed partial class NavigationService(IServiceProvider services, IUserSessionService session, NavigationRoutes routes)
     : ObservableObject, INavigationService
 {
     [ObservableProperty]
@@ -31,7 +32,7 @@ public sealed partial class NavigationService(IServiceProvider services, IUserSe
     // Auth guard for every screen: not signed in → Login; temporary password → Change password.
     Type ResolveTarget(Type requested)
     {
-        if (typeof(IAllowAnonymous).IsAssignableFrom(requested)) return requested;
+        if (typeof(IAnonymousViewModel).IsAssignableFrom(requested)) return requested;
         if (session.CurrentUser is not { } user) return routes.Login;
         if (user.MustChangePassword) return routes.ChangePassword;
         return requested;

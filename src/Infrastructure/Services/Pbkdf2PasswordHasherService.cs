@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace KiotVietTool.Infrastructure.Services;
 
-internal sealed class Pbkdf2PasswordHasher(ILogger<Pbkdf2PasswordHasher> logger) : IPasswordHasher
+internal sealed class Pbkdf2PasswordHasherService(ILogger<Pbkdf2PasswordHasherService> logger) : IPasswordHasherService
 {
     // Current format: "v1.<iterations>.<salt>.<hash>" (Base64), PBKDF2-HMAC-SHA256, OWASP 2023 iterations.
     // A new version gets its own prefix and sizes; stored iterations let the count rise without breaking old hashes.

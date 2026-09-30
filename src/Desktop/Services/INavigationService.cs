@@ -12,6 +12,6 @@ public interface INavigationService : INotifyPropertyChanged
     Task NavigateToAsync<TViewModel>(object? parameter = null, CancellationToken cancellationToken = default)
         where TViewModel : ViewModelBase;
 
-    /// <summary>Goes to <see cref="NavigationRoutes.Home"/> (the auth guard still applies).</summary>
+    /// <summary>Goes to <see cref="Models.NavigationRoutes.Home"/> (the auth guard still applies).</summary>
     Task NavigateHomeAsync(CancellationToken cancellationToken = default);
 }

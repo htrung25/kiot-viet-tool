@@ -8,12 +8,12 @@ using KiotVietTool.Desktop.Services;
 namespace KiotVietTool.Desktop.Views;
 
 /// <summary>Avalonia has no MessageBox; use through <see cref="IDialogService"/>.</summary>
-public sealed partial class MessageDialog : Window
+public sealed partial class MessageDialogWindow : Window
 {
     /// <summary>Used by the XAML previewer.</summary>
-    public MessageDialog() => InitializeComponent();
+    public MessageDialogWindow() => InitializeComponent();
 
-    public MessageDialog(string heading, string message, MessageDialogKind kind, string confirmText) : this()
+    public MessageDialogWindow(string heading, string message, MessageDialogKind kind, string confirmText) : this()
     {
         HeadingText.Text = heading;
         MessageText.Text = message;

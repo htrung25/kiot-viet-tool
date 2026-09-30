@@ -7,27 +7,27 @@ namespace KiotVietTool.Desktop.Services;
 /// Named mutex = "already running?"; named pipe = "second launch asks the first to show itself".
 /// Both work on Windows and macOS.
 /// </summary>
-public sealed class SingleInstance : IDisposable
+public sealed class SingleInstanceService : IDisposable
 {
     readonly Mutex _mutex;
     readonly string _pipeName;
     readonly CancellationTokenSource _cts = new();
 
-    SingleInstance(Mutex mutex, string pipeName)
+    SingleInstanceService(Mutex mutex, string pipeName)
     {
         _mutex = mutex;
         _pipeName = pipeName;
     }
 
     /// <summary>Returns null if another instance is running (after signalling it to activate).</summary>
-    public static SingleInstance? TryAcquire(string id)
+    public static SingleInstanceService? TryAcquire(string id)
     {
         var name = $"{id}.{Environment.UserName}";
         // Windows "Local\" = per logon session. On Unix "Local\" is per process session (each launch differs),
         // so use "Global\" there; the user name in `name` keeps it per user.
         var scope = OperatingSystem.IsWindows() ? "Local" : "Global";
         var mutex = new Mutex(initiallyOwned: true, $@"{scope}\{name}", out var createdNew);
-        if (createdNew) return new SingleInstance(mutex, name);
+        if (createdNew) return new SingleInstanceService(mutex, name);
 
         mutex.Dispose();
         SignalRunningInstance(name);

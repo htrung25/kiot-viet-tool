@@ -10,10 +10,10 @@ namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class MainViewModel : ObservableObject
 {
-    readonly IUserSession _session;
+    readonly IUserSessionService _session;
     readonly IAuthService _authService;
 
-    public MainViewModel(INavigationService navigation, IUserSession session, IAuthService authService)
+    public MainViewModel(INavigationService navigation, IUserSessionService session, IAuthService authService)
     {
         Navigation = navigation;
         _session = session;

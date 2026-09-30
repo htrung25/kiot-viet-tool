@@ -33,7 +33,7 @@ public static class DependencyInjection
             options.UseSqlite(new SqliteConnectionStringBuilder { DataSource = path }.ToString());
         });
 
-        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddSingleton<IPasswordHasherService, Pbkdf2PasswordHasherService>();
         services.AddTransient<IUserAccountRepository, UserAccountRepository>();
         services.AddTransient<DatabaseInitializer>();
         return services;

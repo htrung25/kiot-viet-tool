@@ -7,6 +7,7 @@ using Avalonia.Threading;
 
 using KiotVietTool.Application;
 using KiotVietTool.Desktop.Services;
+using KiotVietTool.Desktop.Models;
 using KiotVietTool.Desktop.ViewModels;
 using KiotVietTool.Desktop.Views;
 using KiotVietTool.Infrastructure;
@@ -19,7 +20,7 @@ using Serilog;
 namespace KiotVietTool.Desktop;
 
 /// <summary>Composition root.</summary>
-public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Application
+public sealed partial class App(SingleInstanceService? singleInstance) : Avalonia.Application
 {
     const string UnexpectedErrorMessage = "Đã xảy ra lỗi không mong muốn. Chi tiết đã được ghi vào file log.";
 

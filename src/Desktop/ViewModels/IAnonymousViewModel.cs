@@ -1,4 +1,4 @@
-namespace KiotVietTool.Desktop.Services;
+namespace KiotVietTool.Desktop.ViewModels;
 
 /// <summary>Marks a view model reachable without signing in (checked by NavigationService).</summary>
-public interface IAllowAnonymous;
+public interface IAnonymousViewModel;

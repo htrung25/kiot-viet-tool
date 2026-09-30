@@ -1,6 +1,6 @@
 namespace KiotVietTool.Application.Interfaces;
 
-public interface IPasswordHasher
+public interface IPasswordHasherService
 {
     string Hash(string password);
 

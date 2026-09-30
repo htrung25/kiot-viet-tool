@@ -5,7 +5,7 @@ namespace KiotVietTool.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result<SignedInUser>> SignInAsync(string username, string password, CancellationToken cancellationToken = default);
-    Task<Result> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default);
+    Task<Result<SignedInUserDto>> SignInAsync(string username, string password, CancellationToken cancellationToken = default);
+    Task<Result> ChangePasswordAsync(ChangePasswordDto request, CancellationToken cancellationToken = default);
     void SignOut();
 }

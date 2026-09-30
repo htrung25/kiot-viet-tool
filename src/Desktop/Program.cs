@@ -11,7 +11,7 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        using var singleInstance = SingleInstance.TryAcquire(InstanceId);
+        using var singleInstance = SingleInstanceService.TryAcquire(InstanceId);
         if (singleInstance is null) return 0; // the running instance was asked to show itself
 
         // %LOCALAPPDATA% only exists on Windows; define it so appsettings.json paths also work in macOS dev.

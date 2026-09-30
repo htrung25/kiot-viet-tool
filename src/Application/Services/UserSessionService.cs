@@ -3,13 +3,13 @@ using KiotVietTool.Application.Interfaces;
 
 namespace KiotVietTool.Application.Services;
 
-internal sealed class UserSession : IUserSession
+internal sealed class UserSessionService : IUserSessionService
 {
-    public SignedInUser? CurrentUser { get; private set; }
+    public SignedInUserDto? CurrentUser { get; private set; }
 
     public event EventHandler? Changed;
 
-    public void Set(SignedInUser? user)
+    public void Set(SignedInUserDto? user)
     {
         CurrentUser = user;
         Changed?.Invoke(this, EventArgs.Empty);

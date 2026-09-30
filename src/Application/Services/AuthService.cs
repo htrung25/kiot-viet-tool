@@ -10,32 +10,32 @@ namespace KiotVietTool.Application.Services;
 
 internal sealed class AuthService(
     IUserAccountRepository repository,
-    IPasswordHasher passwordHasher,
-    UserSession session,
+    IPasswordHasherService passwordHasher,
+    UserSessionService session,
     TimeProvider timeProvider,
     ILogger<AuthService> logger) : IAuthService
 {
     // Same message for unknown user and wrong password: don't reveal which usernames exist.
     const string InvalidCredentials = "Tên đăng nhập hoặc mật khẩu không đúng.";
 
-    public async Task<Result<SignedInUser>> SignInAsync(string username, string password, CancellationToken cancellationToken = default)
+    public async Task<Result<SignedInUserDto>> SignInAsync(string username, string password, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(password))
-            return Result.Failure<SignedInUser>("Nhập tên đăng nhập và mật khẩu.");
+            return Result.Failure<SignedInUserDto>("Nhập tên đăng nhập và mật khẩu.");
 
         var account = await repository.GetByUsernameAsync(username.Trim(), cancellationToken);
         if (account is null || !passwordHasher.Verify(password, account.PasswordHash))
-            return Result.Failure<SignedInUser>(InvalidCredentials);
+            return Result.Failure<SignedInUserDto>(InvalidCredentials);
 
         if (passwordHasher.NeedsRehash(account.PasswordHash))
             await UpgradePasswordHashAsync(account, password, cancellationToken);
 
-        var user = new SignedInUser(account.Id, account.Username, account.MustChangePassword);
+        var user = new SignedInUserDto(account.Id, account.Username, account.MustChangePassword);
         session.Set(user);
         return Result.Success(user);
     }
 
-    public async Task<Result> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result> ChangePasswordAsync(ChangePasswordDto request, CancellationToken cancellationToken = default)
     {
         if (session.CurrentUser is not { } user) return Result.Failure("Bạn chưa đăng nhập.");
 
