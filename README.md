@@ -69,6 +69,8 @@ Sửa `appsettings.json` ngay cạnh file `.exe`, không cần build lại:
 | Khoá | Ý nghĩa |
 |---|---|
 | `Auth:DefaultAdminUsername`, `Auth:DefaultAdminPassword` | Tài khoản admin tạo ở lần chạy đầu (chỉ khi chưa có tài khoản nào) |
+| `Auth:IdleLockMinutes` | Số phút không thao tác thì tool tự khoá, phải nhập lại mật khẩu (mặc định 30, `0` = tắt) |
+| `Auth:IdleWarningSeconds` | Hiện cảnh báo trước khi khoá bao nhiêu giây (mặc định 60) |
 | `Database:Path` | Đường dẫn file SQLite, có thể dùng biến môi trường `%LOCALAPPDATA%` |
 | `Serilog:MinimumLevel:Default` | Mức log (`Debug`, `Information`, `Warning`…) |
 | `Serilog:WriteTo:0:Args:path` | Nơi ghi log |

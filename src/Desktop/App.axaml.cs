@@ -59,6 +59,7 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
         {
             await _host.StartAsync();
             await services.InitializeDatabaseAsync();
+            services.GetRequiredService<IdleLockService>().Attach((Window)sender!);
             await services.GetRequiredService<INavigationService>().NavigateToAsync<LoginViewModel>();
             Log.Information("Application started, version {Version}", typeof(App).Assembly.GetName().Version);
         }
@@ -98,6 +99,8 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<INotificationService>(sp => new NotificationService(sp.GetRequiredService<MainWindow>()));
 
+                services.AddSingleton<IdleLockService>();
+                services.AddSingleton<LockScreenViewModel>();
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<LoginViewModel>();

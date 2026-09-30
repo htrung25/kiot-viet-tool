@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             x:Class="KiotVietTool.Desktop.Views.LockScreenView"
+             x:DataType="vm:LockScreenViewModel">
+    <Panel Background="{StaticResource Bg.App}">
+        <ScrollViewer>
+            <Border Classes="card" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+                <StackPanel Margin="32,28" Spacing="18">
+                    <StackPanel Spacing="12">
+                        <Border Classes="emptyIcon" HorizontalAlignment="Left" Width="44" Height="44" CornerRadius="10">
+                            <PathIcon Data="{StaticResource Icon.Lock}" Width="22" Height="22" />
+                        </Border>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Phiên làm việc đã khoá" Classes="h1" FontSize="22" />
+                            <TextBlock Text="{Binding Message}" Classes="subtitle" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Border Classes="alert error"
+                            IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                            <TextBlock Text="{Binding ErrorMessage}" />
+                        </DockPanel>
+                    </Border>
+
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Tài khoản" Classes="label" />
+                        <TextBlock Text="{Binding Username}" FontWeight="Medium" />
+                    </StackPanel>
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Mật khẩu" Classes="label" />
+                        <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="•"
+                                 Classes="revealPasswordButton" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                        <Button Classes="secondary" HorizontalAlignment="Stretch" Content="Đăng xuất"
+                                Command="{Binding SignOutCommand}" />
+                        <Button Grid.Column="1" Classes="accent" HorizontalAlignment="Stretch" Content="Mở khoá"
+                                Command="{Binding UnlockCommand}" IsDefault="True" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

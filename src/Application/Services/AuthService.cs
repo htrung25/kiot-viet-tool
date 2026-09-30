@@ -60,6 +60,17 @@ internal sealed class AuthService(
         return Result.Success();
     }
 
+    public async Task<Result> VerifyCurrentUserPasswordAsync(string password, CancellationToken cancellationToken = default)
+    {
+        if (session.CurrentUser is not { } user) return Result.Failure("Bạn chưa đăng nhập.");
+        if (string.IsNullOrEmpty(password)) return Result.Failure("Nhập mật khẩu để mở khoá.");
+
+        var account = await repository.GetByIdAsync(user.Id, cancellationToken);
+        if (account is null || !await VerifyAsync(password, account.PasswordHash, cancellationToken))
+            return Result.Failure("Mật khẩu không đúng.");
+        return Result.Success();
+    }
+
     public void SignOut() => session.Set(null);
 
     // Sign-in is the only moment the plain password is available, so weak hashes are upgraded here.

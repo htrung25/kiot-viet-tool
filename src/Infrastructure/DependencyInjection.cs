@@ -25,6 +25,10 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(AuthOptions.SectionName))
             .Validate(o => !string.IsNullOrWhiteSpace(o.DefaultAdminUsername) && !string.IsNullOrEmpty(o.DefaultAdminPassword),
                 $"{AuthOptions.SectionName}:DefaultAdminUsername and DefaultAdminPassword are required.")
+            .Validate(o => o.IdleLockMinutes is >= 0 and <= 1440,
+                $"{AuthOptions.SectionName}:IdleLockMinutes must be 0 (off) to 1440.")
+            .Validate(o => o.IdleWarningSeconds >= 0 && (o.IdleLockMinutes == 0 || o.IdleWarningSeconds < o.IdleLockMinutes * 60),
+                $"{AuthOptions.SectionName}:IdleWarningSeconds must be shorter than IdleLockMinutes.")
             .ValidateOnStart();
 
         services.AddOptions<KiotVietOptions>()

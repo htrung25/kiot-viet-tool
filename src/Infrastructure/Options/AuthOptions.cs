@@ -7,4 +7,6 @@ public sealed class AuthOptions
 
     public string DefaultAdminUsername { get; set; } = "";
     public string DefaultAdminPassword { get; set; } = "";
+    public int IdleLockMinutes { get; set; } = 30;
+    public int IdleWarningSeconds { get; set; } = 60;
 }
