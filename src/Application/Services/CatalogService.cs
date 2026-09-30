@@ -24,6 +24,9 @@ internal sealed class CatalogService(ICatalogRepository catalog) : ICatalogServi
     public Task<IReadOnlyList<PriceBookDto>> GetPriceBooksAsync(CancellationToken cancellationToken = default) =>
         catalog.GetPriceBooksAsync(cancellationToken);
 
+    public Task<IReadOnlyList<ProductDto>> GetProductsByIdsAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken = default) =>
+        ids.Count == 0 ? Task.FromResult<IReadOnlyList<ProductDto>>([]) : catalog.GetProductsByIdsAsync(ids, cancellationToken);
+
     static HashSet<int> WithDescendants(int rootId, ILookup<int?, int> childrenByParent)
     {
         var result = new HashSet<int>();

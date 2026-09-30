@@ -37,6 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
     public bool IsConnectionActive => Navigation.CurrentViewModel is KiotVietConnectionViewModel;
+    public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel;
 
     void OnNavigationChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -44,12 +45,17 @@ public sealed partial class MainViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(IsProductsActive));
             OnPropertyChanged(nameof(IsConnectionActive));
+            OnPropertyChanged(nameof(IsProgramsActive));
         }
     }
 
     [RelayCommand]
     Task OpenProductsAsync(CancellationToken cancellationToken) =>
         Navigation.NavigateToAsync<ProductListViewModel>(null, cancellationToken);
+
+    [RelayCommand]
+    Task OpenProgramsAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<DiscountProgramListViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task OpenConnectionAsync(CancellationToken cancellationToken) =>

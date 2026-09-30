@@ -267,6 +267,53 @@
         <Setter Property="Foreground" Value="{StaticResource Primary}" />
     </Style>
 
+    <!-- ===== Wizard steps ===== -->
+    <Style Selector="Border.stepNumber">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="CornerRadius" Value="13" />
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Border.stepNumber TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+    <Style Selector="Border.stepNumber.active">
+        <Setter Property="Background" Value="{StaticResource Primary}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Border.stepNumber.active TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Text.OnPrimary}" />
+    </Style>
+    <Style Selector="TextBlock.stepLabel">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+    <Style Selector="TextBlock.stepLabel.active">
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+
+    <!-- ===== Stat tile ===== -->
+    <Style Selector="Border.stat">
+        <Setter Property="Background" Value="{StaticResource Bg.App}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Default}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="14,10" />
+    </Style>
+    <Style Selector="TextBlock.statValue">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+
     <!-- ===== Data grid ===== -->
     <Style Selector="DataGrid">
         <Setter Property="Background" Value="{StaticResource Bg.Surface}" />

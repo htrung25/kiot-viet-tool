@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.DiscountProgramListView"
+             x:DataType="vm:DiscountProgramListViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,*" RowSpacing="20">
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="accent" VerticalAlignment="Center" Command="{Binding CreateCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource Icon.Plus}" />
+                    <TextBlock Text="Tạo chương trình" />
+                </StackPanel>
+            </Button>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Chương trình giảm giá" Classes="h1" />
+                <TextBlock Text="Giảm giá có thời hạn theo % hoặc số tiền, ghi lên bảng giá KiotViet." Classes="subtitle" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Classes="card">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <WrapPanel Margin="16,14,6,4">
+                    <ComboBox Width="200" Margin="0,0,16,10" ItemsSource="{Binding StatusOptions}"
+                              SelectedItem="{Binding SelectedStatus}" />
+                    <CheckBox Content="Hiện chương trình kết thúc quá 90 ngày" Margin="0,0,10,10"
+                              IsChecked="{Binding IncludeLongEnded}" />
+                </WrapPanel>
+                <Border Grid.Row="1" Classes="divider" />
+
+                <Panel Grid.Row="2">
+                    <DataGrid ItemsSource="{Binding Programs}" IsVisible="{Binding HasPrograms}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="CHƯƠNG TRÌNH" Width="*" MinWidth="110">
+                                <DataTemplate x:DataType="models:DiscountProgramItem">
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Medium" ToolTip.Tip="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding DetailsText}" Classes="caption" TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{Binding DetailsText}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="GIẢM" Width="96">
+                                <DataTemplate x:DataType="models:DiscountProgramItem">
+                                    <TextBlock Text="{Binding ValueText}" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="THỜI GIAN" Width="170">
+                                <DataTemplate x:DataType="models:DiscountProgramItem">
+                                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                                        <TextBlock Text="{Binding StartText}" FontSize="13" />
+                                        <TextBlock Text="{Binding EndText}" FontSize="13" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TRẠNG THÁI" Width="130">
+                                <DataTemplate x:DataType="models:DiscountProgramItem">
+                                    <Border Classes="badge" Classes.success="{Binding IsActiveStatus}" HorizontalAlignment="Left"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding StatusText}" />
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="120">
+                                <DataTemplate x:DataType="models:DiscountProgramItem">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" Margin="0,0,4,0">
+                                        <Button Classes="icon" ToolTip.Tip="Sửa" IsVisible="{Binding IsDraft}"
+                                                Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).EditCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.Edit}" />
+                                        </Button>
+                                        <Button Classes="icon" ToolTip.Tip="Nhân bản"
+                                                Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).DuplicateCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.Copy}" />
+                                        </Button>
+                                        <Button Classes="icon danger" ToolTip.Tip="Xoá" IsVisible="{Binding IsDraft}"
+                                                Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).DeleteCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.Delete}" />
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel IsVisible="{Binding ShowEmptyState}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="400">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Tag}" />
+                        </Border>
+                        <TextBlock Text="Chưa có chương trình giảm giá" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="Tạo bảng giá trên KiotViet cho chương trình, đồng bộ, rồi tạo chương trình để tính giá giảm."
+                                   Classes="subtitle" TextAlignment="Center" />
+                        <Button Classes="accent" Content="Tạo chương trình" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                Command="{Binding CreateCommand}" />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding ShowNoResults}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="380">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Search}" />
+                        </Border>
+                        <TextBlock Text="Không có chương trình phù hợp" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="Thử trạng thái khác." Classes="subtitle" TextAlignment="Center" />
+                        <Button Classes="secondary" Content="Xoá bộ lọc" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                Command="{Binding ClearFiltersCommand}" />
+                    </StackPanel>
+                </Panel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

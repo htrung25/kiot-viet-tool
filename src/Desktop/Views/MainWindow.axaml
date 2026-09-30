@@ -62,6 +62,13 @@
                             <TextBlock Text="Sản phẩm" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+                    <Button Classes="navItem" Classes.active="{Binding IsProgramsActive}"
+                            Command="{Binding OpenProgramsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <PathIcon Data="{StaticResource Icon.Tag}" />
+                            <TextBlock Text="Chương trình giảm giá" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
                     <TextBlock Text="HỆ THỐNG" Classes="navSection" Margin="12,16,12,6" />
                     <Button Classes="navItem" Classes.active="{Binding IsConnectionActive}"

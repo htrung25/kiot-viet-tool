@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Product> Products => Set<Product>();
     public DbSet<PriceBook> PriceBooks => Set<PriceBook>();
     public DbSet<PriceBookItem> PriceBookItems => Set<PriceBookItem>();
+    public DbSet<DiscountProgram> DiscountPrograms => Set<DiscountProgram>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

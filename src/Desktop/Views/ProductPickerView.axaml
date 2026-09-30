@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.ProductPickerView"
+             x:DataType="vm:ProductPickerViewModel">
+    <StackPanel Spacing="8">
+        <TextBox Text="{Binding Keyword}" Classes="clearButton" PlaceholderText="{Binding Placeholder}">
+            <TextBox.InnerLeftContent>
+                <PathIcon Classes="leading" Data="{StaticResource Icon.Search}" />
+            </TextBox.InnerLeftContent>
+        </TextBox>
+
+        <Border IsVisible="{Binding HasResults}" BorderBrush="{StaticResource Border.Default}" BorderThickness="1"
+                CornerRadius="8" Background="{StaticResource Bg.Surface}">
+            <ItemsControl ItemsSource="{Binding Results}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ProductChoice">
+                        <Border BorderBrush="{StaticResource Border.Default}" BorderThickness="0,0,0,1" Padding="12,6">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Classes="ghost" Padding="10,4" MinHeight="28"
+                                        Command="{Binding $parent[UserControl].((vm:ProductPickerViewModel)DataContext).AddCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <PathIcon Data="{StaticResource Icon.Plus}" Width="14" Height="14" />
+                                        <TextBlock Text="Thêm" />
+                                    </StackPanel>
+                                </Button>
+                                <StackPanel VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock TextTrimming="CharacterEllipsis">
+                                        <Run Text="{Binding Code}" Foreground="{StaticResource Primary}" />
+                                        <Run Text="  " />
+                                        <Run Text="{Binding Name}" />
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Details}" Classes="caption" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <TextBlock Text="{Binding EmptyText}" Classes="caption" IsVisible="{Binding !HasSelection}" />
+        <ItemsControl ItemsSource="{Binding Selected}" IsVisible="{Binding HasSelection}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:ProductChoice">
+                    <Border Background="{StaticResource Primary.Soft}" BorderBrush="{StaticResource Primary.SoftBorder}"
+                            BorderThickness="1" CornerRadius="999" Padding="10,2,4,2" Margin="0,0,6,6"
+                            ToolTip.Tip="{Binding Details}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock VerticalAlignment="Center" FontSize="13" MaxWidth="260" TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Code}" FontWeight="Medium" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding Name}" />
+                            </TextBlock>
+                            <Button Classes="icon" Width="22" Height="22" MinHeight="22" Padding="0"
+                                    ToolTip.Tip="Bỏ chọn"
+                                    Command="{Binding $parent[UserControl].((vm:ProductPickerViewModel)DataContext).RemoveCommand}"
+                                    CommandParameter="{Binding}">
+                                <PathIcon Data="{StaticResource Icon.Close}" Width="12" Height="12" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>

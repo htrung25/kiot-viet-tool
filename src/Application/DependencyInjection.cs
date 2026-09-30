@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddTransient<IKiotVietConnectionService, KiotVietConnectionService>();
         services.AddSingleton<ICatalogSyncService, CatalogSyncService>();
         services.AddTransient<ICatalogService, CatalogService>();
+        services.AddTransient<IDiscountProgramService, DiscountProgramService>();
         return services;
     }
 }

@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddTransient<IUserAccountRepository, UserAccountRepository>();
         services.AddTransient<IKiotVietConnectionRepository, KiotVietConnectionRepository>();
         services.AddTransient<ICatalogRepository, CatalogRepository>();
+        services.AddTransient<IDiscountProgramRepository, DiscountProgramRepository>();
         services.AddTransient<DatabaseInitializer>();
         return services;
     }

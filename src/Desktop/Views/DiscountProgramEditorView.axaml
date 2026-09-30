@@ -1,0 +1,305 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             xmlns:dtos="using:KiotVietTool.Application.DTOs"
+             x:Class="KiotVietTool.Desktop.Views.DiscountProgramEditorView"
+             x:DataType="vm:DiscountProgramEditorViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
+        <DockPanel>
+            <Button DockPanel.Dock="Left" Classes="icon" Margin="0,0,12,0" VerticalAlignment="Center"
+                    ToolTip.Tip="Về danh sách" Command="{Binding CancelCommand}">
+                <PathIcon Data="{StaticResource Icon.ArrowLeft}" />
+            </Button>
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Title}" Classes="h1" />
+                <TextBlock Text="Chương trình được lưu dạng nháp, chưa ảnh hưởng tới KiotViet." Classes="subtitle" />
+            </StackPanel>
+        </DockPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Classes="stepNumber" Classes.active="{Binding IsStep1}"><TextBlock Text="1" /></Border>
+                <TextBlock Text="Thông tin" Classes="stepLabel" Classes.active="{Binding IsStep1}" />
+            </StackPanel>
+            <Border Classes="divider" Width="40" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Classes="stepNumber" Classes.active="{Binding IsStep2}"><TextBlock Text="2" /></Border>
+                <TextBlock Text="Phạm vi" Classes="stepLabel" Classes.active="{Binding IsStep2}" />
+            </StackPanel>
+            <Border Classes="divider" Width="40" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Classes="stepNumber" Classes.active="{Binding IsStep3}"><TextBlock Text="3" /></Border>
+                <TextBlock Text="Xem trước" Classes="stepLabel" Classes.active="{Binding IsStep3}" />
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Row="2" Classes="alert error"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <DockPanel>
+                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                <TextBlock Text="{Binding ErrorMessage}" />
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="3" Classes="card">
+            <Panel>
+                <ScrollViewer IsVisible="{Binding IsStep1}">
+                    <StackPanel Margin="24,20" Spacing="16" MaxWidth="680" HorizontalAlignment="Left">
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Tên chương trình" Classes="label" />
+                            <TextBox Text="{Binding Name}" MaxLength="100" PlaceholderText="Ví dụ: Sale cuối tuần 10/10" />
+                        </StackPanel>
+
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Loại giảm giá" Classes="label" />
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <RadioButton GroupName="DiscountType" Content="Giảm theo %" IsChecked="{Binding IsPercent}" />
+                                <RadioButton GroupName="DiscountType" Content="Giảm theo số tiền (₫)"
+                                             IsChecked="{Binding !IsPercent}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                            <StackPanel Classes="field">
+                                <TextBlock Text="Mức giảm" Classes="label" />
+                                <TextBox Text="{Binding ValueText}">
+                                    <TextBox.InnerRightContent>
+                                        <TextBlock Text="{Binding ValueSuffix}" Classes="muted" Margin="0,0,10,0"
+                                                   VerticalAlignment="Center" />
+                                    </TextBox.InnerRightContent>
+                                </TextBox>
+                                <TextBlock Text="{Binding ValueHint}" Classes="caption" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Classes="field">
+                                <TextBlock Text="Làm tròn giá sau giảm" Classes="label" />
+                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding RoundingOptions}"
+                                          SelectedItem="{Binding SelectedRounding}" />
+                                <TextBlock Text="Luôn làm tròn xuống, có lợi cho khách." Classes="caption" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Bảng giá đích trên KiotViet" Classes="label" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Classes="secondary" Margin="8,0,0,0"
+                                        Command="{Binding SyncPriceBooksCommand}" IsEnabled="{Binding IsIdle}"
+                                        ToolTip.Tip="Tải lại danh sách bảng giá từ KiotViet">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource Icon.Sync}" />
+                                        <TextBlock Text="Đồng bộ" />
+                                    </StackPanel>
+                                </Button>
+                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding TargetPriceBooks}"
+                                          SelectedItem="{Binding SelectedTarget}" PlaceholderText="Chọn bảng giá">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="dtos:TargetPriceBookDto">
+                                            <StackPanel Spacing="1">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Medium" />
+                                                <TextBlock Classes="caption"
+                                                           Text="{Binding Problem, TargetNullValue='Có thể dùng'}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
+                            <Border Classes="stat" IsVisible="{Binding HasTarget}" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="4">
+                                    <TextBlock Text="Thời gian" Classes="caption" />
+                                    <TextBlock Grid.Column="1" Text="{Binding TargetPeriodText}" FontWeight="Medium" />
+                                    <TextBlock Grid.Row="1" Text="Áp dụng" Classes="caption" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TargetScopeText}" TextWrapping="Wrap" />
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="Thời gian chương trình lấy từ bảng giá. Muốn đổi thời gian, sửa bảng giá trên KiotViet rồi đồng bộ."
+                                       Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Classes="alert warning">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.Info}" />
+                                <TextBlock Text="Chưa có bảng giá? Trên KiotViet tạo bảng giá mới đặt tên [TOOL] + tên chương trình, đặt ngày giờ bắt đầu và kết thúc, chọn chi nhánh áp dụng và để trống danh sách hàng. Sau đó bấm Đồng bộ ở trên." />
+                            </DockPanel>
+                        </Border>
+
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Ghi chú" Classes="label" />
+                            <TextBox Text="{Binding Note}" Classes="multiline" MaxLength="500" AcceptsReturn="True"
+                                     TextWrapping="Wrap" MinHeight="72" PlaceholderText="Không bắt buộc" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <ScrollViewer IsVisible="{Binding IsStep2}">
+                    <StackPanel Margin="24,20" Spacing="18" MaxWidth="760" HorizontalAlignment="Left">
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Áp dụng cho" Classes="label" />
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <RadioButton GroupName="Scope" Content="Toàn bộ sản phẩm" IsChecked="{Binding IsScopeAll}" />
+                                <RadioButton GroupName="Scope" Content="Theo nhóm hàng" IsChecked="{Binding IsScopeCategories}" />
+                                <RadioButton GroupName="Scope" Content="Theo danh sách sản phẩm" IsChecked="{Binding IsScopeProducts}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Classes="field" IsVisible="{Binding IsScopeCategories}">
+                            <TextBlock Text="Nhóm hàng (gồm cả nhóm con)" Classes="label" />
+                            <Border BorderBrush="{StaticResource Border.Default}" BorderThickness="1" CornerRadius="8"
+                                    MaxHeight="260">
+                                <ScrollViewer>
+                                    <ItemsControl ItemsSource="{Binding Categories}" Margin="12,6">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:CategoryChoice">
+                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}"
+                                                          Margin="{Binding Indent}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Classes="field" IsVisible="{Binding IsScopeProducts}">
+                            <TextBlock Text="Sản phẩm áp dụng" Classes="label" />
+                            <ContentControl Content="{Binding ScopeProducts}" />
+                            <TextBlock Text="Chọn một đơn vị tính thì các đơn vị khác của mặt hàng đó cũng được thêm; loại trừ đơn vị không muốn giảm ở dưới."
+                                       Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <CheckBox IsChecked="{Binding BaseUnitOnly}"
+                                  Content="Chỉ giảm giá đơn vị cơ bản (không giảm đơn vị quy đổi như thùng, lốc)" />
+
+                        <Border Classes="divider" />
+
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Loại trừ sản phẩm" Classes="label" />
+                            <ContentControl Content="{Binding ExcludedProducts}" />
+                            <TextBlock Text="Hàng combo, dịch vụ, ngừng kinh doanh, chưa có giá… tự động bị loại. Xem lý do ở bước Xem trước."
+                                       Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Grid IsVisible="{Binding IsStep3}" RowDefinitions="Auto,Auto,Auto,*">
+                    <Grid Margin="16,14,16,0" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <Border Classes="stat">
+                            <StackPanel>
+                                <TextBlock Text="Được giảm giá" Classes="caption" />
+                                <TextBlock Text="{Binding AppliedText}" Classes="statValue" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Classes="stat">
+                            <StackPanel>
+                                <TextBlock Text="Bị loại" Classes="caption" />
+                                <TextBlock Text="{Binding ExcludedText}" Classes="statValue" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="stat" ToolTip.Tip="Tổng số tiền giảm nếu mỗi sản phẩm bán 1 đơn vị (tham khảo)">
+                            <StackPanel>
+                                <TextBlock Text="Tổng tiền giảm" Classes="caption" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding TotalDiscountText}" Classes="statValue" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" Margin="16,12,16,0" Spacing="8">
+                        <Border Classes="alert error" IsVisible="{Binding HasConflicts}">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                                <TextBlock Text="{Binding ConflictText}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Classes="alert warning" IsVisible="{Binding HasForeignItems}">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                                <TextBlock Text="{Binding ForeignItemsText}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Classes="alert warning" IsVisible="{Binding HasOverlappingPriceBooks}">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                                <TextBlock Text="{Binding OverlappingText}" />
+                            </DockPanel>
+                        </Border>
+                        <Border Classes="alert warning" IsVisible="{Binding HasHighDiscount}">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                                <TextBlock Text="{Binding HighDiscountText}" />
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <WrapPanel Grid.Row="2" Margin="16,12,6,2">
+                        <TextBox Text="{Binding PreviewKeyword}" Classes="clearButton" Width="260" Margin="0,0,10,10"
+                                 PlaceholderText="Tìm theo mã hoặc tên hàng">
+                            <TextBox.InnerLeftContent>
+                                <PathIcon Classes="leading" Data="{StaticResource Icon.Search}" />
+                            </TextBox.InnerLeftContent>
+                        </TextBox>
+                        <ComboBox Width="180" Margin="0,0,10,10" ItemsSource="{Binding PreviewFilterOptions}"
+                                  SelectedItem="{Binding SelectedPreviewFilter}" />
+                    </WrapPanel>
+
+                    <Panel Grid.Row="3">
+                        <DataGrid ItemsSource="{Binding PreviewRows}" IsVisible="{Binding HasPreviewRows}"
+                                  AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                                  BorderThickness="0,1,0,0" BorderBrush="{StaticResource Border.Default}">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="MÃ HÀNG" Width="100">
+                                    <DataTemplate x:DataType="models:PreviewRowItem">
+                                        <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="TÊN HÀNG" Width="3*" MinWidth="150">
+                                    <DataTemplate x:DataType="models:PreviewRowItem">
+                                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                                            <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Name}"
+                                                       TextTrimming="CharacterEllipsis" Classes.muted="{Binding IsExcluded}" />
+                                            <TextBlock Text="{Binding Unit}" Classes="caption" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="GIÁ GỐC" Width="100">
+                                    <DataTemplate x:DataType="models:PreviewRowItem">
+                                        <TextBlock Text="{Binding BasePriceText}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="GIÁ GIẢM" Width="140">
+                                    <DataTemplate x:DataType="models:PreviewRowItem">
+                                        <StackPanel VerticalAlignment="Center" Spacing="1">
+                                            <TextBlock Text="{Binding DiscountedPriceText}" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Primary}" />
+                                            <TextBlock Text="{Binding DiscountText}" Classes="caption" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="GHI CHÚ" Width="2*" MinWidth="110">
+                                    <DataTemplate x:DataType="models:PreviewRowItem">
+                                        <TextBlock Text="{Binding NoteText}" VerticalAlignment="Center" Classes="caption"
+                                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding NoteText}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock Text="Không có sản phẩm phù hợp." Classes="subtitle" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" IsVisible="{Binding !HasPreviewRows}" Margin="24" />
+                    </Panel>
+                </Grid>
+            </Panel>
+        </Border>
+
+        <DockPanel Grid.Row="4">
+            <Button DockPanel.Dock="Left" Classes="ghost" Content="Huỷ" Command="{Binding CancelCommand}" />
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+                <ProgressBar IsIndeterminate="True" Width="60" MinWidth="60" VerticalAlignment="Center"
+                             IsVisible="{Binding IsBusy}" />
+                <Button Classes="secondary" Content="Quay lại" Command="{Binding BackCommand}"
+                        IsVisible="{Binding CanGoBack}" IsEnabled="{Binding IsIdle}" />
+                <Button Classes="accent" Content="Tiếp tục" Command="{Binding NextCommand}"
+                        IsVisible="{Binding IsNotLastStep}" IsEnabled="{Binding IsIdle}" />
+                <Button Classes="accent" Content="Lưu nháp" Command="{Binding SaveCommand}"
+                        IsVisible="{Binding IsLastStep}" IsEnabled="{Binding IsIdle}" />
+            </StackPanel>
+            <Panel />
+        </DockPanel>
+    </Grid>
+</UserControl>

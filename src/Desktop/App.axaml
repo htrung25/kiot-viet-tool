@@ -28,6 +28,15 @@
         <DataTemplate DataType="vm:KiotVietConnectionViewModel">
             <views:KiotVietConnectionView />
         </DataTemplate>
+        <DataTemplate DataType="vm:DiscountProgramListViewModel">
+            <views:DiscountProgramListView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:DiscountProgramEditorViewModel">
+            <views:DiscountProgramEditorView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:ProductPickerViewModel">
+            <views:ProductPickerView />
+        </DataTemplate>
     </Application.DataTemplates>
 
     <Application.Styles>

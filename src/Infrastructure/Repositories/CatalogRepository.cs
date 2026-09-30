@@ -93,9 +93,34 @@ internal sealed class CatalogRepository(IDbContextFactory<AppDbContext> dbFactor
                 counts.GetValueOrDefault(b.Id)))];
     }
 
+    public async Task<IReadOnlyList<Product>> GetAllProductsAsync(CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.Products.AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ProductDto>> GetProductsByIdsAsync(IReadOnlyCollection<long> ids, CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        return await ToDtos(db, db.Products.AsNoTracking().Where(p => ids.Contains(p.Id)).OrderBy(p => p.Code).ThenBy(p => p.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     static IQueryable<ProductDto> ToDtos(AppDbContext db, IQueryable<Product> products) =>
         from p in products
         join c in db.Categories on p.CategoryId equals c.Id into categories
         from c in categories.DefaultIfEmpty()
         select new ProductDto(p.Id, p.Code, p.FullName, c == null ? null : c.Name, p.Unit, p.Type, p.BasePrice, p.IsActive, p.AllowsSale);
+
+    public async Task<IReadOnlyList<PriceBook>> GetPriceBookEntitiesAsync(CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.PriceBooks.AsNoTracking().Where(b => !b.IsDeleted).ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PriceBookItem>> GetPriceBookItemsAsync(CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.PriceBookItems.AsNoTracking().ToListAsync(cancellationToken);
+    }
 }
