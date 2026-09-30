@@ -62,6 +62,15 @@
                             <TextBlock Text="Sản phẩm" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+
+                    <TextBlock Text="HỆ THỐNG" Classes="navSection" Margin="12,16,12,6" />
+                    <Button Classes="navItem" Classes.active="{Binding IsConnectionActive}"
+                            Command="{Binding OpenConnectionCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <PathIcon Data="{StaticResource Icon.Link}" />
+                            <TextBlock Text="Kết nối KiotViet" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </DockPanel>
         </Border>

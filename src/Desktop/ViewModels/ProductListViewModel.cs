@@ -1,22 +1,28 @@
-using System.Globalization;
-
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using KiotVietTool.Application.Common.Pagination;
+using KiotVietTool.Application.DTOs;
+using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Desktop.Models;
+using KiotVietTool.Desktop.Services;
+using KiotVietTool.Domain.Enums;
 
 namespace KiotVietTool.Desktop.ViewModels;
 
-public sealed partial class ProductListViewModel : ViewModelBase
+public sealed partial class ProductListViewModel(
+    ICatalogService catalog,
+    ICatalogSyncService sync,
+    IKiotVietConnectionService connections,
+    INavigationService navigation,
+    IDialogService dialogs,
+    INotificationService notifications) : ViewModelBase
 {
     static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(250);
-    static readonly CultureInfo Vietnamese = CultureInfo.GetCultureInfo("vi-VN");
-    static readonly FilterOption<string?> AllCategories = new("Tất cả nhóm hàng", null);
+    static readonly FilterOption<int?> AllCategories = new("Tất cả nhóm hàng", null);
 
-    IReadOnlyList<ProductItem> _all = [];
-    IReadOnlyList<ProductItem> _filtered = [];
-    bool _filterSuspended;
-    CancellationTokenSource? _pendingSearch;
+    bool _filterSuspended = true;
+    CancellationTokenSource? _pendingLoad;
 
     public IReadOnlyList<FilterOption<int>> PageSizeOptions { get; } =
     [
@@ -25,12 +31,12 @@ public sealed partial class ProductListViewModel : ViewModelBase
         new("100 / trang", 100),
     ];
 
-    public IReadOnlyList<FilterOption<ProductKind?>> KindOptions { get; } =
+    public IReadOnlyList<FilterOption<ProductEnum?>> KindOptions { get; } =
     [
         new("Tất cả loại hàng", null),
-        new("Hàng hoá", ProductKind.Goods),
-        new("Combo", ProductKind.Combo),
-        new("Dịch vụ", ProductKind.Service),
+        new("Hàng hoá", ProductEnum.Goods),
+        new("Combo", ProductEnum.Combo),
+        new("Dịch vụ", ProductEnum.Service),
     ];
 
     public IReadOnlyList<FilterOption<bool?>> StatusOptions { get; } =
@@ -41,136 +47,162 @@ public sealed partial class ProductListViewModel : ViewModelBase
     ];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasProducts), nameof(ShowNoResults), nameof(Summary))]
+    [NotifyPropertyChangedFor(nameof(HasProducts), nameof(ShowNoResults), nameof(ShowEmptyState))]
     public partial IReadOnlyList<ProductItem> Products { get; private set; } = [];
 
     [ObservableProperty]
-    public partial IReadOnlyList<FilterOption<string?>> CategoryOptions { get; private set; } = [AllCategories];
+    public partial IReadOnlyList<FilterOption<int?>> CategoryOptions { get; private set; } = [AllCategories];
 
     [ObservableProperty] public partial string? Keyword { get; set; }
-    [ObservableProperty] public partial FilterOption<string?>? SelectedCategory { get; set; } = AllCategories;
-    [ObservableProperty] public partial FilterOption<ProductKind?>? SelectedKind { get; set; }
+    [ObservableProperty] public partial FilterOption<int?>? SelectedCategory { get; set; } = AllCategories;
+    [ObservableProperty] public partial FilterOption<ProductEnum?>? SelectedKind { get; set; }
     [ObservableProperty] public partial FilterOption<bool?>? SelectedStatus { get; set; }
     [ObservableProperty] public partial FilterOption<int>? SelectedPageSize { get; set; }
 
+    [ObservableProperty] public partial string Summary { get; private set; } = "0 sản phẩm";
     [ObservableProperty] public partial int CurrentPage { get; private set; } = 1;
     [ObservableProperty] public partial int PageCount { get; private set; } = 1;
     [ObservableProperty] public partial IReadOnlyList<PageLink> PageLinks { get; private set; } = PageLink.Build(1, 1);
+    [ObservableProperty] public partial string? SyncProgressText { get; private set; }
 
-    public ProductListViewModel()
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowNoResults))]
+    public partial bool HasData { get; private set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SyncHint))]
+    [NotifyCanExecuteChangedFor(nameof(SyncCommand))]
+    public partial bool IsConnected { get; private set; }
+
+    public bool HasProducts => Products.Count > 0;
+    public bool ShowEmptyState => !HasData && !HasProducts;
+    public bool ShowNoResults => HasData && !HasProducts;
+    public string SyncHint => IsConnected ? "Tải thay đổi mới nhất từ KiotViet" : "Cần kết nối KiotViet trước khi đồng bộ";
+
+    int PageSize => SelectedPageSize?.Value ?? PageSizeOptions[0].Value;
+
+    public override async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
         SelectedKind = KindOptions[0];
         SelectedStatus = StatusOptions[0];
         SelectedPageSize = PageSizeOptions[0];
+        IsConnected = await connections.GetAsync(cancellationToken) is not null;
+        await ReloadCategoriesAsync(cancellationToken);
+        _filterSuspended = false;
+        await LoadPageAsync(1);
     }
 
-    int PageSize => SelectedPageSize?.Value ?? PageSizeOptions[0].Value;
-
-    public bool HasData => _all.Count > 0;
-    public bool HasProducts => Products.Count > 0;
-    public bool ShowEmptyState => !HasData;
-    public bool ShowNoResults => HasData && !HasProducts;
-
-    public string Summary
+    [RelayCommand(CanExecute = nameof(IsConnected))]
+    async Task SyncAsync(CancellationToken cancellationToken)
     {
-        get
+        var progress = new Progress<SyncProgressDto>(p => SyncProgressText = p.Total is { } total
+            ? $"{p.Stage}: {DisplayFormat.Number(p.Done)} / {DisplayFormat.Number(total)}"
+            : $"{p.Stage}…");
+        SyncProgressText = "Đang đồng bộ…";
+        try
         {
-            if (_all.Count == 0) return "0 sản phẩm";
-            if (_filtered.Count == 0) return string.Format(Vietnamese, "0 / {0:N0} sản phẩm", _all.Count);
-            var from = (CurrentPage - 1) * PageSize + 1;
-            var to = from + Products.Count - 1;
-            var range = string.Format(Vietnamese, "{0:N0}–{1:N0} / {2:N0} sản phẩm", from, to, _filtered.Count);
-            return _filtered.Count == _all.Count
-                ? range
-                : string.Format(Vietnamese, "{0} (lọc từ {1:N0})", range, _all.Count);
+            var result = await sync.SyncAsync(progress, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                await dialogs.ShowErrorAsync(result.Error!);
+                return;
+            }
+            notifications.ShowSuccess($"Đã đồng bộ {DisplayFormat.Number(result.Value!.ChangedProducts)} sản phẩm thay đổi.");
         }
-    }
-
-    public void Load(IReadOnlyList<ProductItem> products)
-    {
-        _all = products;
-        RunWithoutFiltering(() =>
+        finally
         {
-            CategoryOptions = [AllCategories, .. products.Select(p => p.CategoryName).Distinct().Order()
-                .Select(name => new FilterOption<string?>(name, name))];
-            SelectedCategory = AllCategories;
-        });
-        OnPropertyChanged(nameof(HasData));
-        OnPropertyChanged(nameof(ShowEmptyState));
-        ApplyFilter();
+            SyncProgressText = null;
+        }
+
+        await ReloadCategoriesAsync(cancellationToken);
+        await LoadPageAsync(CurrentPage);
     }
 
     [RelayCommand]
-    void ClearFilters()
+    Task OpenConnectionAsync(CancellationToken cancellationToken) =>
+        navigation.NavigateToAsync<KiotVietConnectionViewModel>(null, cancellationToken);
+
+    [RelayCommand]
+    Task ClearFiltersAsync()
     {
-        RunWithoutFiltering(() =>
-        {
-            Keyword = "";
-            SelectedCategory = AllCategories;
-            SelectedKind = KindOptions[0];
-            SelectedStatus = StatusOptions[0];
-        });
-        ApplyFilter();
+        _filterSuspended = true;
+        Keyword = "";
+        SelectedCategory = AllCategories;
+        SelectedKind = KindOptions[0];
+        SelectedStatus = StatusOptions[0];
+        _filterSuspended = false;
+        return LoadPageAsync(1);
     }
 
     async partial void OnKeywordChanged(string? value)
     {
-        _pendingSearch?.Cancel();
         if (_filterSuspended) return;
-        _pendingSearch = new CancellationTokenSource();
-        try
-        {
-            await Task.Delay(SearchDelay, _pendingSearch.Token);
-            ApplyFilter();
-        }
-        catch (OperationCanceledException) { }
+        await Task.Delay(SearchDelay);
+        if (Keyword == value) await LoadPageAsync(1);
     }
 
-    partial void OnSelectedCategoryChanged(FilterOption<string?>? value) => ApplyFilter();
-    partial void OnSelectedKindChanged(FilterOption<ProductKind?>? value) => ApplyFilter();
-    partial void OnSelectedStatusChanged(FilterOption<bool?>? value) => ApplyFilter();
-
-    partial void OnSelectedPageSizeChanged(FilterOption<int>? value)
-    {
-        if (!_filterSuspended) ShowPage(1);
-    }
+    partial void OnSelectedCategoryChanged(FilterOption<int?>? value) => ReloadFirstPage();
+    partial void OnSelectedKindChanged(FilterOption<ProductEnum?>? value) => ReloadFirstPage();
+    partial void OnSelectedStatusChanged(FilterOption<bool?>? value) => ReloadFirstPage();
+    partial void OnSelectedPageSizeChanged(FilterOption<int>? value) => ReloadFirstPage();
 
     [RelayCommand]
-    void GoToPage(int? page)
-    {
-        if (page is { } number) ShowPage(number);
-    }
+    Task GoToPageAsync(int? page) => page is { } number ? LoadPageAsync(number) : Task.CompletedTask;
 
     [RelayCommand(CanExecute = nameof(CanGoToPreviousPage))]
-    void PreviousPage() => ShowPage(CurrentPage - 1);
+    Task PreviousPageAsync() => LoadPageAsync(CurrentPage - 1);
 
     [RelayCommand(CanExecute = nameof(CanGoToNextPage))]
-    void NextPage() => ShowPage(CurrentPage + 1);
+    Task NextPageAsync() => LoadPageAsync(CurrentPage + 1);
 
     bool CanGoToPreviousPage() => CurrentPage > 1;
     bool CanGoToNextPage() => CurrentPage < PageCount;
 
-    void RunWithoutFiltering(Action changes)
+    async void ReloadFirstPage()
     {
+        if (!_filterSuspended) await LoadPageAsync(1);
+    }
+
+    async Task ReloadCategoriesAsync(CancellationToken cancellationToken)
+    {
+        var categories = await catalog.GetCategoriesAsync(cancellationToken);
+        var selectedId = SelectedCategory?.Value;
+        var wasSuspended = _filterSuspended;
         _filterSuspended = true;
-        try { changes(); }
-        finally { _filterSuspended = false; }
+        CategoryOptions = [AllCategories, .. CategoryTree.Flatten(categories)
+            .Select(x => new FilterOption<int?>(new string(' ', x.Depth * 4) + x.Category.Name, x.Category.Id))];
+        SelectedCategory = CategoryOptions.FirstOrDefault(o => o.Value == selectedId) ?? AllCategories;
+        _filterSuspended = wasSuspended;
     }
 
-    void ApplyFilter()
+    async Task LoadPageAsync(int page)
     {
-        if (_filterSuspended) return;
-        var filter = new ProductFilter(Keyword, SelectedCategory?.Value, SelectedKind?.Value, SelectedStatus?.Value);
-        _filtered = filter.IsEmpty ? _all : _all.Where(filter.Matches).ToList();
-        ShowPage(1);
-    }
+        _pendingLoad?.Cancel();
+        var cts = _pendingLoad = new CancellationTokenSource();
+        var filter = new ProductFilterDto(Keyword, SelectedCategory?.Value, SelectedKind?.Value, SelectedStatus?.Value);
+        var request = new PageRequest { Page = page, PageSize = PageSize };
 
-    void ShowPage(int page)
-    {
-        PageCount = Math.Max(1, (_filtered.Count + PageSize - 1) / PageSize);
-        CurrentPage = Math.Clamp(page, 1, PageCount);
+        PagedResult<ProductDto> result;
+        try { result = await catalog.GetProductsAsync(filter, request, cts.Token); }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested) { return; }
+
+        if (result.Items.Count == 0 && result.Page > 1 && result.TotalItems > 0)
+        {
+            await LoadPageAsync(result.TotalPages ?? 1);
+            return;
+        }
+
+        var filterIsEmpty = string.IsNullOrWhiteSpace(filter.Keyword) && filter.CategoryId is null && filter.Type is null && filter.IsActive is null;
+        if (filterIsEmpty) HasData = result.TotalItems > 0;
+        else if (result.Items.Count > 0) HasData = true;
+
+        Products = [.. result.Items.Select(ProductItem.From)];
+        CurrentPage = result.Page;
+        PageCount = result.TotalPages ?? 1;
         PageLinks = PageLink.Build(CurrentPage, PageCount);
-        Products = _filtered.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+        Summary = result.TotalItems is 0 or null
+            ? "0 sản phẩm"
+            : $"{DisplayFormat.Number(result.From)}–{DisplayFormat.Number(result.To)} / {DisplayFormat.Number(result.TotalItems.Value)} sản phẩm";
         PreviousPageCommand.NotifyCanExecuteChanged();
         NextPageCommand.NotifyCanExecuteChanged();
     }

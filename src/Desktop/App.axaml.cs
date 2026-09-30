@@ -103,6 +103,7 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
                 services.AddTransient<LoginViewModel>();
                 services.AddTransient<ChangePasswordViewModel>();
                 services.AddTransient<ProductListViewModel>();
+                services.AddTransient<KiotVietConnectionViewModel>();
             })
             .Build();
 

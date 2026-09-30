@@ -15,6 +15,9 @@ public static class DependencyInjection
         services.AddSingleton<UserSessionService>();
         services.AddSingleton<IUserSessionService>(sp => sp.GetRequiredService<UserSessionService>());
         services.AddTransient<IAuthService, AuthService>();
+        services.AddTransient<IKiotVietConnectionService, KiotVietConnectionService>();
+        services.AddSingleton<ICatalogSyncService, CatalogSyncService>();
+        services.AddTransient<ICatalogService, CatalogService>();
         return services;
     }
 }

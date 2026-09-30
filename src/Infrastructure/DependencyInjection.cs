@@ -27,6 +27,14 @@ public static class DependencyInjection
                 $"{AuthOptions.SectionName}:DefaultAdminUsername and DefaultAdminPassword are required.")
             .ValidateOnStart();
 
+        services.AddOptions<KiotVietOptions>()
+            .Bind(configuration.GetSection(KiotVietOptions.SectionName))
+            .Validate(o => Uri.TryCreate(o.TokenUrl, UriKind.Absolute, out _) && Uri.TryCreate(o.ApiBaseUrl, UriKind.Absolute, out _),
+                $"{KiotVietOptions.SectionName}:TokenUrl and ApiBaseUrl must be absolute URLs.")
+            .Validate(o => o.RequestTimeoutSeconds > 0 && o.MaxGetRequestsPerHour > 0 && o.MaxRetries >= 0,
+                $"{KiotVietOptions.SectionName}: timeout, rate limit and retries must be positive.")
+            .ValidateOnStart();
+
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
             var path = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ResolvedPath;
@@ -34,7 +42,11 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<IPasswordHasherService, Pbkdf2PasswordHasherService>();
+        services.AddSingleton<ISecretProtectorService, DpapiSecretProtectorService>();
+        services.AddSingleton<IKiotVietApiService, KiotVietApiService>();
         services.AddTransient<IUserAccountRepository, UserAccountRepository>();
+        services.AddTransient<IKiotVietConnectionRepository, KiotVietConnectionRepository>();
+        services.AddTransient<ICatalogRepository, CatalogRepository>();
         services.AddTransient<DatabaseInitializer>();
         return services;
     }

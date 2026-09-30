@@ -36,16 +36,24 @@ public sealed partial class MainViewModel : ObservableObject
     public string UserInitial => Username is { Length: > 0 } name ? name[..1].ToUpperInvariant() : "";
 
     public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
+    public bool IsConnectionActive => Navigation.CurrentViewModel is KiotVietConnectionViewModel;
 
     void OnNavigationChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(INavigationService.CurrentViewModel))
+        {
             OnPropertyChanged(nameof(IsProductsActive));
+            OnPropertyChanged(nameof(IsConnectionActive));
+        }
     }
 
     [RelayCommand]
     Task OpenProductsAsync(CancellationToken cancellationToken) =>
         Navigation.NavigateToAsync<ProductListViewModel>(null, cancellationToken);
+
+    [RelayCommand]
+    Task OpenConnectionAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<KiotVietConnectionViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task ChangePasswordAsync(CancellationToken cancellationToken) =>

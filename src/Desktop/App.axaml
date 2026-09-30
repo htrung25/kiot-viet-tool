@@ -25,6 +25,9 @@
         <DataTemplate DataType="vm:ProductListViewModel">
             <views:ProductListView />
         </DataTemplate>
+        <DataTemplate DataType="vm:KiotVietConnectionViewModel">
+            <views:KiotVietConnectionView />
+        </DataTemplate>
     </Application.DataTemplates>
 
     <Application.Styles>
