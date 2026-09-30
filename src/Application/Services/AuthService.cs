@@ -24,7 +24,7 @@ internal sealed class AuthService(
             return Result.Failure<SignedInUserDto>("Nhập tên đăng nhập và mật khẩu.");
 
         var account = await repository.GetByUsernameAsync(username.Trim(), cancellationToken);
-        if (account is null || !passwordHasher.Verify(password, account.PasswordHash))
+        if (account is null || !await VerifyAsync(password, account.PasswordHash, cancellationToken))
             return Result.Failure<SignedInUserDto>(InvalidCredentials);
 
         if (passwordHasher.NeedsRehash(account.PasswordHash))
@@ -41,8 +41,6 @@ internal sealed class AuthService(
 
         var account = await repository.GetByIdAsync(user.Id, cancellationToken);
         if (account is null) return Result.Failure("Không tìm thấy tài khoản.");
-        if (!passwordHasher.Verify(request.CurrentPassword, account.PasswordHash))
-            return Result.Failure("Mật khẩu hiện tại không đúng.");
         if (request.NewPassword != request.ConfirmPassword)
             return Result.Failure("Xác nhận mật khẩu mới không khớp.");
         if (request.NewPassword == request.CurrentPassword)
@@ -51,7 +49,11 @@ internal sealed class AuthService(
         try { UserAccount.EnsureValidNewPassword(request.NewPassword); }
         catch (DomainException ex) { return Result.Failure(ex.Message); }
 
-        account.ChangePassword(passwordHasher.Hash(request.NewPassword), timeProvider.GetUtcNow().UtcDateTime);
+        if (!await VerifyAsync(request.CurrentPassword, account.PasswordHash, cancellationToken))
+            return Result.Failure("Mật khẩu hiện tại không đúng.");
+
+        var newHash = await HashAsync(request.NewPassword, cancellationToken);
+        account.ChangePassword(newHash, timeProvider.GetUtcNow().UtcDateTime);
         await repository.UpdateAsync(account, cancellationToken);
 
         session.Set(user with { MustChangePassword = false });
@@ -66,7 +68,7 @@ internal sealed class AuthService(
     {
         try
         {
-            account.UpgradePasswordHash(passwordHasher.Hash(password), timeProvider.GetUtcNow().UtcDateTime);
+            account.UpgradePasswordHash(await HashAsync(password, cancellationToken), timeProvider.GetUtcNow().UtcDateTime);
             await repository.UpdateAsync(account, cancellationToken);
             logger.LogInformation("Upgraded password hash for account {AccountId}", account.Id);
         }
@@ -75,4 +77,10 @@ internal sealed class AuthService(
             logger.LogWarning(ex, "Could not upgrade password hash for account {AccountId}", account.Id);
         }
     }
+
+    Task<bool> VerifyAsync(string password, string hash, CancellationToken cancellationToken) =>
+        Task.Run(() => passwordHasher.Verify(password, hash), cancellationToken);
+
+    Task<string> HashAsync(string password, CancellationToken cancellationToken) =>
+        Task.Run(() => passwordHasher.Hash(password), cancellationToken);
 }
