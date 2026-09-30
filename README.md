@@ -51,7 +51,7 @@ App tự áp migration mỗi lần khởi động, không cần chạy `dotnet e
 3. Chạy `KiotVietTool.exe`. Nếu SmartScreen cảnh báo, chọn *More info → Run anyway* (vì file chưa được ký số).
 4. Kiểm tra:
    - Màn **Đăng nhập** hiện ra. Đăng nhập `admin` / `admin` thì bị chuyển sang màn **Đổi mật khẩu** (bắt buộc, mật khẩu mới tối thiểu 8 ký tự).
-   - Sau khi đổi mật khẩu, màn hình **Khách hàng** hiện ra, thử Thêm, Sửa (double-click một dòng), Xoá (nút hoặc phím Delete) và Tìm.
+   - Sau khi đổi mật khẩu, màn hình **Sản phẩm** hiện ra (chưa có dữ liệu cho tới khi có chức năng đồng bộ KiotViet).
    - Mở lại `.exe` lần hai: cửa sổ cũ được đưa lên trước, không mở cửa sổ mới.
    - Dữ liệu: `%LocalAppData%\KiotVietTool\app.db`
    - Log: `%LocalAppData%\KiotVietTool\logs\app-YYYYMMDD.log` (mỗi ngày một file, giữ 30 ngày)
@@ -60,7 +60,7 @@ App tự áp migration mỗi lần khởi động, không cần chạy `dotnet e
 
 - Tool chỉ có **một tài khoản admin**. Lần chạy đầu tiên app tự tạo tài khoản `admin` / `admin` (lấy từ mục `Auth` trong `appsettings.json`), và bắt đổi mật khẩu ở lần đăng nhập đầu.
 - Đổi mật khẩu sau này: nút **Đổi mật khẩu** trên thanh trên cùng.
-- **Quên mật khẩu:** tắt app, xoá bảng tài khoản bằng `sqlite3 app.db "DELETE FROM UserAccounts;"` (hoặc công cụ SQLite bất kỳ). Lần chạy sau app sẽ tạo lại `admin` / `admin`. Dữ liệu Khách hàng không bị ảnh hưởng.
+- **Quên mật khẩu:** tắt app, xoá bảng tài khoản bằng `sqlite3 app.db "DELETE FROM UserAccounts;"` (hoặc công cụ SQLite bất kỳ). Lần chạy sau app sẽ tạo lại `admin` / `admin`. Dữ liệu khác không bị ảnh hưởng.
 
 ## Cấu hình
 
@@ -79,23 +79,20 @@ Sửa `appsettings.json` ngay cạnh file `.exe`, không cần build lại:
 
 ## Cấu trúc
 
-Mọi layer đều chia theo feature (`Features/<Tên>/`), phần dùng chung đặt ở `Common/`.
+Trong mỗi project, file được chia theo **loại** (layer-based), không theo feature.
 
 ```
 src/
   Domain/          (KiotVietTool.Domain)          Entity + quy tắc nghiệp vụ, không phụ thuộc gì
-    Auth/  Customers/  Common/
+    Entities/  Exceptions/
   Application/     (KiotVietTool.Application)     Use case
-    Features/Auth/  Features/Customers/   (service, interface repository, DTO)
-    Common/                               (Result)
+    Interfaces/  Services/  DTOs/  Common/ (Result, Pagination)
   Infrastructure/  (KiotVietTool.Infrastructure)  EF Core + SQLite
-    Persistence/                          (DbContext, DatabaseInitializer, Configurations, Migrations)
-    Features/Auth/  Features/Customers/   (repository, hash mật khẩu)
+    Persistence/ (DbContext, DatabaseInitializer, Configurations, Migrations)
+    Repositories/  Services/ (hash mật khẩu)  Options/
   Desktop/         (KiotVietTool.Desktop)         Avalonia
     Program.cs  App.axaml(.cs)            (composition root)
-    Shell/                                (MainWindow, sidebar)
-    Features/Auth/  Features/Customers/   (View + ViewModel đặt cạnh nhau)
-    Common/                               (ViewModelBase, Navigation, Dialogs, Notifications, Platform)
+    Views/  ViewModels/  Models/  Services/ (Navigation, Dialog, Notification, SingleInstance)
     Resources/                            (Colors, Icons, Styles: design token)
 ```
 

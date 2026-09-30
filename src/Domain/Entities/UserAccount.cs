@@ -1,6 +1,6 @@
-using KiotVietTool.Domain.Common;
+using KiotVietTool.Domain.Exceptions;
 
-namespace KiotVietTool.Domain.Auth;
+namespace KiotVietTool.Domain.Entities;
 
 public sealed class UserAccount
 {
@@ -36,6 +36,16 @@ public sealed class UserAccount
     {
         PasswordHash = newPasswordHash;
         MustChangePassword = false;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    /// <summary>
+    /// Same password, stronger hash (e.g. more iterations). Unlike <see cref="ChangePassword"/> it keeps
+    /// <see cref="MustChangePassword"/>: a default password is still a default password.
+    /// </summary>
+    public void UpgradePasswordHash(string newPasswordHash, DateTime nowUtc)
+    {
+        PasswordHash = newPasswordHash;
         UpdatedAtUtc = nowUtc;
     }
 

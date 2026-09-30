@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 
-namespace KiotVietTool.Desktop.Common.Notifications;
+namespace KiotVietTool.Desktop.Services;
 
 public sealed class NotificationService(TopLevel host) : INotificationService
 {

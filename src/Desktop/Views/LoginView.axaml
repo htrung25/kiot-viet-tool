@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:KiotVietTool.Desktop.Features.Auth"
-             x:Class="KiotVietTool.Desktop.Features.Auth.LoginView"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             x:Class="KiotVietTool.Desktop.Views.LoginView"
              x:DataType="vm:LoginViewModel">
     <Grid ColumnDefinitions="5*,6*">
         <!-- Brand panel -->

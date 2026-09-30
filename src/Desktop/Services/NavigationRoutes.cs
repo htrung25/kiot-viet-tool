@@ -1,4 +1,4 @@
-namespace KiotVietTool.Desktop.Common.Navigation;
+namespace KiotVietTool.Desktop.Services;
 
 /// <summary>
 /// Well-known screens, set once in the composition root so Common and features don't reference each other:

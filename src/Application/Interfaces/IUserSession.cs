@@ -1,4 +1,6 @@
-namespace KiotVietTool.Application.Features.Auth;
+using KiotVietTool.Application.DTOs;
+
+namespace KiotVietTool.Application.Interfaces;
 
 /// <summary>Who is signed in to this app instance. Changed only through <see cref="IAuthService"/>.</summary>
 public interface IUserSession

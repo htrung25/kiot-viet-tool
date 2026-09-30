@@ -2,6 +2,7 @@
 
 Avalonia desktop app (.NET 10) shipped to customers as one self-contained Windows `KiotVietTool.exe`. Future goal: integrate the KiotViet public API.
 Dev machine is macOS: the app runs there too (`dotnet run`), the release exe is tested on a Windows VM. UI text is Vietnamese.
+Business requirements live in `docs/SRS_v2.md` (time-bound % / VND discounts pushed to KiotViet price books). Read it before building features; its "Vấn đề mở" table lists decisions still pending.
 
 ## Commands
 
@@ -25,34 +26,34 @@ Folders are `src/<Layer>/` (short names); project files, assembly names and name
 
 | Project | TFM | Contains | References |
 |---|---|---|---|
-| Domain | net10.0 | Entities with invariants; throw `DomainException` (Vietnamese, user-facing message) | nothing |
-| Application | net10.0 | `Features/<Feature>/` (service, its ports: repository/hasher interfaces, DTOs), `Common/` (Result) | Domain, DI.Abstractions |
-| Infrastructure | net10.0 | `Persistence/` (AppDbContext, DatabaseInitializer, DatabaseOptions, Configurations, Migrations), `Features/<Feature>/` (repositories, feature services/options) | Application, EF Core SQLite |
-| Desktop | net10.0 | `Program.cs`, `App.axaml(.cs)` (composition root), `Shell/` (MainWindow + MainViewModel), `Features/<Feature>/` (View + ViewModel side by side), `Common/` (ViewModelBase, Navigation, Dialogs, Notifications, Platform), `Resources/` (Colors, Icons, Styles) | Infrastructure, Avalonia |
+| Domain | net10.0 | `Entities/` (entities with invariants), `Exceptions/` (`DomainException`: Vietnamese, user-facing message) | nothing |
+| Application | net10.0 | `Interfaces/` (service + port interfaces: repositories, hasher, session), `Services/` (implementations), `DTOs/`, `Common/` (Result, Pagination) | Domain, DI.Abstractions, Logging.Abstractions |
+| Infrastructure | net10.0 | `Persistence/` (AppDbContext, DatabaseInitializer, DesignTimeDbContextFactory, `Configurations/`, `Migrations/`), `Repositories/`, `Services/` (e.g. Pbkdf2PasswordHasher), `Options/` (DatabaseOptions, AuthOptions) | Application, EF Core SQLite |
+| Desktop | net10.0 | `Program.cs`, `App.axaml(.cs)` (composition root), `Views/` (windows, pages, dialogs), `ViewModels/` (incl. `ViewModelBase`, `MainViewModel`), `Models/` (display models, filters, enums), `Services/` (Navigation, Dialog, Notification, SingleInstance), `Resources/` (Colors, Icons, Styles) | Infrastructure, Avalonia |
 
 Key decisions:
 - **Repositories use `IDbContextFactory`**: each method is its own short-lived DbContext (no long-lived context in a desktop app). Entities returned are detached; `UpdateAsync` attaches via `Update()`.
 - **Validation lives in the Domain entity**; Application services catch `DomainException` and return `Result.Failure`. Services never throw for expected business errors.
 - **Time** via `TimeProvider` (registered by `AddApplication`).
-- **Navigation is ViewModel-first**: `INavigationService.NavigateToAsync<TVm>(parameter)` sets `CurrentViewModel`; `MainWindow`'s `ContentControl` renders it through `Application.DataTemplates` in `App.axaml`. VMs override `ViewModelBase.OnNavigatedToAsync`. Features never navigate into another feature by type: use `NavigateHomeAsync()`; which screen is Login / ChangePassword / Home is declared once as `NavigationRoutes` in `App.CreateHost`.
-- **Dialogs** only through async `IDialogService` (Avalonia has no MessageBox; `Common/Dialogs/MessageDialog` implements it). Confirm with a question title, the consequence as message and a verb on the button (`ConfirmAsync("Xoá khách hàng?", "...", "Xoá khách hàng", destructive: true)`), never a bare "OK".
+- **Navigation is ViewModel-first**: `INavigationService.NavigateToAsync<TVm>(parameter)` sets `CurrentViewModel`; `MainWindow`'s `ContentControl` renders it through `Application.DataTemplates` in `App.axaml`. VMs override `ViewModelBase.OnNavigatedToAsync`. Screens never navigate to an unrelated screen by type just to "go home": use `NavigateHomeAsync()`; which screen is Login / ChangePassword / Home is declared once as `NavigationRoutes` in `App.CreateHost`.
+- **Dialogs** only through async `IDialogService` (Avalonia has no MessageBox; `Views/MessageDialog` implements it). Confirm with a question title, the consequence as message and a verb on the button (`ConfirmAsync("Dừng chương trình?", "...", "Dừng chương trình", destructive: true)`), never a bare "OK".
 - **Success feedback** is a toast via `INotificationService.ShowSuccess` (non-blocking); errors that need attention use a dialog or an inline `Border.alert.error`.
 - **Startup**: `Program.Main` does the single-instance check (named Mutex: `Local\` on Windows, `Global\` on Unix because Unix `Local\` is per process session; activation signal via named pipe) and defines `%LOCALAPPDATA%` on non-Windows. `App.OnFrameworkInitializationCompleted` registers global exception handlers (`Dispatcher.UIThread.UnhandledException`, `AppDomain`, `TaskScheduler`), builds the Generic Host (`UseContentRoot(AppContext.BaseDirectory)`, Serilog) and shows `MainWindow` from DI; on `Opened` it starts the host, runs `InitializeDatabaseAsync()` (→ `Persistence/DatabaseInitializer`: migrate + seed default admin) and navigates to Login.
-- **Auth** (single local account): `UserAccount` in SQLite, password hashed with PBKDF2-SHA256 (`Infrastructure/Features/Auth/Pbkdf2PasswordHasher`, 600k iterations, format `pbkdf2-sha256$iter$salt$hash`). `Verify` trusts nothing from the stored string: exact 16-byte salt, exact 32-byte hash (output length is a constant), iterations 100k–10M; anything else is rejected and logged as a warning (never log the hash). Default admin comes from `Auth:DefaultAdminUsername/Password` in appsettings and is seeded only when the table is empty, with `MustChangePassword = true`. `IUserSession` (singleton, Application) holds the signed-in user; only `IAuthService` changes it. `NavigationService` is the auth guard: not signed in → `LoginViewModel`, temporary password → `ChangePasswordViewModel`; view models reachable anonymously implement `IAllowAnonymous`.
+- **Auth** (single local account): `UserAccount` in SQLite, password hashed with PBKDF2-SHA256 (`Infrastructure/Services/Pbkdf2PasswordHasher`, 600k iterations, format `v1.<iterations>.<salt>.<hash>` Base64; legacy `pbkdf2-sha256$...` still verifies). `Verify` trusts nothing from the stored string: known version, exact 16-byte salt, exact 32-byte hash (output length is a constant), iterations 100k–10M; anything else is rejected and logged as a warning (never log the hash). `NeedsRehash` is true for legacy/older version/fewer iterations; `AuthService.SignInAsync` then re-hashes the password best-effort via `UserAccount.UpgradePasswordHash` (keeps `MustChangePassword`; a failed save never blocks sign-in). To strengthen hashing later: raise `Iterations`, or add a `v2` with its own sizes and keep parsing `v1`. Default admin comes from `Auth:DefaultAdminUsername/Password` in appsettings and is seeded only when the table is empty, with `MustChangePassword = true`. `IUserSession` (singleton, Application) holds the signed-in user; only `IAuthService` changes it. `NavigationService` is the auth guard: not signed in → `LoginViewModel`, temporary password → `ChangePasswordViewModel`; view models reachable anonymously implement `IAllowAnonymous`.
 - **Config**: `appsettings.json` is excluded from the single-file bundle and sits beside the exe. `%LOCALAPPDATA%` is expanded in `Database:Path` and in the Serilog file path; use `/` separators (works on both OSes). Serilog `"Using"` must list sink assemblies (single-file cannot scan).
 - Central Package Management: versions only in `Directory.Packages.props`; `dotnet add package` writes there automatically.
 - Build output goes to `artifacts/` (`ArtifactsPath`), not `bin/obj`.
 
-## Adding a feature (follow the Customers slice)
+## Adding a feature (backend: follow Auth — `UserAccount` → `AuthService` → `UserAccountRepository`; UI: follow the product screen)
 
-1. `Domain/<Feature>/<Entity>.cs`: private setters, `static Create(...)`, `Update(...)`, validation → `DomainException`.
-2. `Application/Features/<Feature>/`: `I<Entity>Repository`, `I<X>Service`, `<X>Service`, `<Feature>Dtos.cs`. Register in `Application/DependencyInjection.cs`.
-3. `Infrastructure/Persistence/Configurations/<Entity>Configuration.cs`, `DbSet` in `AppDbContext`, repository in `Infrastructure/Features/<Feature>/`, register in `Infrastructure/DependencyInjection.cs`, then add a migration.
-4. Desktop: `Features/<Feature>/<X>View.axaml(.cs)` + `<X>ViewModel.cs` (transient, `x:DataType` compiled bindings) + one `DataTemplate` line in `App.axaml` (xmlns per feature) + DI registration in `App.CreateHost`.
+1. `Domain/Entities/<Entity>.cs`: private setters, `static Create(...)`, `Update(...)`, validation → `DomainException`.
+2. Application: `Interfaces/I<Entity>Repository.cs`, `Interfaces/I<X>Service.cs`, `Services/<X>Service.cs`, one file per DTO in `DTOs/`. Register in `Application/DependencyInjection.cs`.
+3. `Infrastructure/Persistence/Configurations/<Entity>Configuration.cs`, `DbSet` in `AppDbContext`, repository in `Infrastructure/Repositories/`, register in `Infrastructure/DependencyInjection.cs`, then add a migration.
+4. Desktop: `Views/<X>View.axaml(.cs)` + `ViewModels/<X>ViewModel.cs` (transient, `x:DataType` compiled bindings) + display models in `Models/` + one `DataTemplate` line in `App.axaml` (`vm:` → `views:`) + DI registration in `App.CreateHost`.
 
 ## Code rules
 
-- **Folder layout rules**: every layer is organised by feature (`Features/<Name>/`); only code shared by several features goes in `Common/`. Interfaces live next to the feature that owns them. Namespace = folder path. One main type per file, file name = type name (a feature's DTO records may share `<Feature>Dtos.cs`). Features must not reference each other; cross-feature wiring happens in the composition root.
+- **Folder layout rules (layer-based)**: inside each project, files are grouped by kind (`Entities/`, `Interfaces/`, `Services/`, `DTOs/`, `Repositories/`, `Options/`, `Views/`, `ViewModels/`, `Models/`...), not by feature. Namespace = folder path. One main type per file, file name = type name. `Common/` only for cross-cutting building blocks (Result, Pagination).
 - `sealed` by default, file-scoped namespaces, primary constructors where natural.
 - async/await end to end with `CancellationToken`; never `.Result` / `.Wait()` / `.GetAwaiter().GetResult()`.
 - No business logic in code-behind or ViewModels; ViewModels only call Application services.

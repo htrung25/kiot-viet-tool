@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="KiotVietTool.Desktop.Common.Dialogs.MessageDialog"
+        x:Class="KiotVietTool.Desktop.Views.MessageDialog"
         Width="440" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{StaticResource Bg.Surface}">

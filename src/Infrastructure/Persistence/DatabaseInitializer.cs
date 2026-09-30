@@ -1,6 +1,6 @@
-using KiotVietTool.Application.Features.Auth;
-using KiotVietTool.Domain.Auth;
-using KiotVietTool.Infrastructure.Features.Auth;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Domain.Entities;
+using KiotVietTool.Infrastructure.Options;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

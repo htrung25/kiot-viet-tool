@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 
-namespace KiotVietTool.Desktop.Shell;
+using KiotVietTool.Desktop.ViewModels;
+
+namespace KiotVietTool.Desktop.Views;
 
 public sealed partial class MainWindow : Window
 {

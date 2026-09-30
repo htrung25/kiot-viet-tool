@@ -1,6 +1,9 @@
 using Avalonia.Controls.ApplicationLifetimes;
 
-namespace KiotVietTool.Desktop.Common.Dialogs;
+using KiotVietTool.Desktop.Models;
+using KiotVietTool.Desktop.Views;
+
+namespace KiotVietTool.Desktop.Services;
 
 public sealed class DialogService : IDialogService
 {

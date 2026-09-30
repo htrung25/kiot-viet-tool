@@ -1,6 +1,7 @@
 using KiotVietTool.Application.Common;
+using KiotVietTool.Application.DTOs;
 
-namespace KiotVietTool.Application.Features.Auth;
+namespace KiotVietTool.Application.Interfaces;
 
 public interface IAuthService
 {

@@ -1,4 +1,7 @@
-namespace KiotVietTool.Application.Features.Auth;
+using KiotVietTool.Application.DTOs;
+using KiotVietTool.Application.Interfaces;
+
+namespace KiotVietTool.Application.Services;
 
 internal sealed class UserSession : IUserSession
 {

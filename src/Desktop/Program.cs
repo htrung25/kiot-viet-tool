@@ -1,6 +1,6 @@
 using Avalonia;
 
-using KiotVietTool.Desktop.Common.Platform;
+using KiotVietTool.Desktop.Services;
 
 namespace KiotVietTool.Desktop;
 

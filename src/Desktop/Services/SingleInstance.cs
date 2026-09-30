@@ -1,7 +1,7 @@
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 
-namespace KiotVietTool.Desktop.Common.Platform;
+namespace KiotVietTool.Desktop.Services;
 
 /// <summary>
 /// Named mutex = "already running?"; named pipe = "second launch asks the first to show itself".

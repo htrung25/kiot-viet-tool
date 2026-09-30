@@ -1,10 +1,10 @@
-using KiotVietTool.Application.Features.Auth;
-using KiotVietTool.Domain.Auth;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Domain.Entities;
 using KiotVietTool.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
 
-namespace KiotVietTool.Infrastructure.Features.Auth;
+namespace KiotVietTool.Infrastructure.Repositories;
 
 internal sealed class UserAccountRepository(IDbContextFactory<AppDbContext> dbFactory) : IUserAccountRepository
 {

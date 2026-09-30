@@ -1,0 +1,153 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.ProductListView"
+             x:DataType="vm:ProductListViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,*" RowSpacing="20">
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="secondary" VerticalAlignment="Center" IsEnabled="False"
+                    ToolTip.Tip="Cần kết nối KiotViet trước khi đồng bộ" ToolTip.ShowOnDisabled="True">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource Icon.Sync}" />
+                    <TextBlock Text="Đồng bộ ngay" />
+                </StackPanel>
+            </Button>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Sản phẩm" Classes="h1" />
+                <TextBlock Text="Danh sách sản phẩm đồng bộ từ KiotViet." Classes="subtitle" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Classes="card">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <WrapPanel Margin="16,14,6,4">
+                    <TextBox Text="{Binding Keyword}" Classes="clearButton" Width="280" Margin="0,0,10,10"
+                             PlaceholderText="Tìm theo mã hoặc tên hàng">
+                        <TextBox.InnerLeftContent>
+                            <PathIcon Classes="leading" Data="{StaticResource Icon.Search}" />
+                        </TextBox.InnerLeftContent>
+                    </TextBox>
+                    <ComboBox Width="180" Margin="0,0,10,10" ItemsSource="{Binding CategoryOptions}"
+                              SelectedItem="{Binding SelectedCategory}" />
+                    <ComboBox Width="160" Margin="0,0,10,10" ItemsSource="{Binding KindOptions}"
+                              SelectedItem="{Binding SelectedKind}" />
+                    <ComboBox Width="190" Margin="0,0,10,10" ItemsSource="{Binding StatusOptions}"
+                              SelectedItem="{Binding SelectedStatus}" />
+                </WrapPanel>
+                <Border Grid.Row="1" Classes="divider" />
+
+                <Panel Grid.Row="2">
+                    <DataGrid ItemsSource="{Binding Products}" IsVisible="{Binding HasProducts}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="MÃ HÀNG" Width="120" SortMemberPath="Code">
+                                <DataTemplate x:DataType="models:ProductItem">
+                                    <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TÊN HÀNG" Width="3*" MinWidth="200" SortMemberPath="Name">
+                                <DataTemplate x:DataType="models:ProductItem">
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Medium"
+                                                   Classes.muted="{Binding !IsActive}" ToolTip.Tip="{Binding Name}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Details}" Classes="caption" VerticalAlignment="Center" />
+                                            <Border Classes="badge" Padding="6,0" IsVisible="{Binding !IsActive}">
+                                                <TextBlock Text="Ngừng kinh doanh" FontSize="11" />
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="GIÁ BÁN" Width="130" SortMemberPath="BasePrice">
+                                <DataTemplate x:DataType="models:ProductItem">
+                                    <TextBlock Text="{Binding BasePriceText}" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="ĐANG GIẢM GIÁ" Width="2*" MinWidth="150"
+                                                    SortMemberPath="DiscountedPrice">
+                                <DataTemplate x:DataType="models:ProductItem">
+                                    <Panel VerticalAlignment="Center">
+                                        <StackPanel Spacing="1" IsVisible="{Binding HasDiscount}">
+                                            <TextBlock Text="{Binding DiscountedPriceText}" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource Primary}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <PathIcon Data="{StaticResource Icon.Tag}" Width="12" Height="12"
+                                                          Foreground="{StaticResource Text.Muted}" />
+                                                <TextBlock Text="{Binding DiscountProgramName}" Classes="caption"
+                                                           ToolTip.Tip="{Binding DiscountProgramName}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <TextBlock Text="—" Classes="muted" IsVisible="{Binding !HasDiscount}" />
+                                    </Panel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel IsVisible="{Binding ShowEmptyState}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="380">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Products}" />
+                        </Border>
+                        <TextBlock Text="Chưa có dữ liệu sản phẩm" Classes="h2" FontSize="16"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="Kết nối KiotViet rồi bấm Đồng bộ ngay để tải danh sách sản phẩm về máy."
+                                   Classes="subtitle" TextAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding ShowNoResults}" VerticalAlignment="Center"
+                                HorizontalAlignment="Center" Spacing="10" Margin="24,48" MaxWidth="380">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Search}" />
+                        </Border>
+                        <TextBlock Text="Không tìm thấy sản phẩm" Classes="h2" FontSize="16"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="Thử từ khoá khác hoặc bỏ bớt bộ lọc." Classes="subtitle"
+                                   TextAlignment="Center" />
+                        <Button Classes="secondary" Content="Xoá bộ lọc" HorizontalAlignment="Center"
+                                Margin="0,6,0,0" Command="{Binding ClearFiltersCommand}" />
+                    </StackPanel>
+                </Panel>
+
+                <Border Grid.Row="3" Classes="cardFooter" Padding="16,8">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                            <ComboBox Classes="compact" Width="120" Margin="0,0,8,0" VerticalAlignment="Center"
+                                      ItemsSource="{Binding PageSizeOptions}" SelectedItem="{Binding SelectedPageSize}"
+                                      ToolTip.Tip="Số sản phẩm mỗi trang" />
+                            <Button Classes="page" Command="{Binding PreviousPageCommand}" ToolTip.Tip="Trang trước">
+                                <PathIcon Data="{StaticResource Icon.ChevronLeft}" />
+                            </Button>
+                            <ItemsControl ItemsSource="{Binding PageLinks}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PageLink">
+                                        <Panel>
+                                            <Button Classes="page" Classes.current="{Binding IsCurrent}"
+                                                    Content="{Binding Number}" IsVisible="{Binding !IsGap}"
+                                                    Command="{Binding $parent[UserControl].((vm:ProductListViewModel)DataContext).GoToPageCommand}"
+                                                    CommandParameter="{Binding Number}" />
+                                            <TextBlock Text="…" IsVisible="{Binding IsGap}" Classes="muted"
+                                                       Width="24" TextAlignment="Center" VerticalAlignment="Center" />
+                                        </Panel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Classes="page" Command="{Binding NextPageCommand}" ToolTip.Tip="Trang sau">
+                                <PathIcon Data="{StaticResource Icon.ChevronRight}" />
+                            </Button>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Summary}" Classes="caption" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Summary}" />
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:KiotVietTool.Desktop.Shell"
-        x:Class="KiotVietTool.Desktop.Shell.MainWindow"
+        xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+        x:Class="KiotVietTool.Desktop.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="KiotViet Tool" Width="1200" Height="760" MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen">
@@ -55,11 +55,11 @@
 
                 <StackPanel Margin="12,0" Spacing="2">
                     <TextBlock Text="QUẢN LÝ" Classes="navSection" />
-                    <Button Classes="navItem" Classes.active="{Binding IsCustomersActive}"
-                            Command="{Binding OpenCustomersCommand}">
+                    <Button Classes="navItem" Classes.active="{Binding IsProductsActive}"
+                            Command="{Binding OpenProductsCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <PathIcon Data="{StaticResource Icon.Customers}" />
-                            <TextBlock Text="Khách hàng" VerticalAlignment="Center" />
+                            <PathIcon Data="{StaticResource Icon.Products}" />
+                            <TextBlock Text="Sản phẩm" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

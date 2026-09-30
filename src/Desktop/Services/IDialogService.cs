@@ -1,4 +1,4 @@
-namespace KiotVietTool.Desktop.Common.Dialogs;
+namespace KiotVietTool.Desktop.Services;
 
 public interface IDialogService
 {

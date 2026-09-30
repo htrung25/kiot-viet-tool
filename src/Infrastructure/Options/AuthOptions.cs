@@ -1,4 +1,4 @@
-namespace KiotVietTool.Infrastructure.Features.Auth;
+namespace KiotVietTool.Infrastructure.Options;
 
 /// <summary>Default admin created on first start when no account exists; the password must be changed at first login.</summary>
 public sealed class AuthOptions

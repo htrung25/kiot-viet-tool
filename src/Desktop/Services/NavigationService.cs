@@ -1,10 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-using KiotVietTool.Application.Features.Auth;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Desktop.ViewModels;
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace KiotVietTool.Desktop.Common.Navigation;
+namespace KiotVietTool.Desktop.Services;
 
 public sealed partial class NavigationService(IServiceProvider services, IUserSession session, NavigationRoutes routes)
     : ObservableObject, INavigationService

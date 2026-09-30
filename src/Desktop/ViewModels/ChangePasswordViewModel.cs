@@ -1,12 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using KiotVietTool.Application.Features.Auth;
-using KiotVietTool.Desktop.Common;
-using KiotVietTool.Desktop.Common.Notifications;
-using KiotVietTool.Desktop.Common.Navigation;
+using KiotVietTool.Application.DTOs;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Desktop.Services;
 
-namespace KiotVietTool.Desktop.Features.Auth;
+namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class ChangePasswordViewModel(
     IAuthService authService,

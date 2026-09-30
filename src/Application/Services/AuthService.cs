@@ -1,14 +1,19 @@
 using KiotVietTool.Application.Common;
-using KiotVietTool.Domain.Auth;
-using KiotVietTool.Domain.Common;
+using KiotVietTool.Application.DTOs;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Domain.Entities;
+using KiotVietTool.Domain.Exceptions;
 
-namespace KiotVietTool.Application.Features.Auth;
+using Microsoft.Extensions.Logging;
+
+namespace KiotVietTool.Application.Services;
 
 internal sealed class AuthService(
     IUserAccountRepository repository,
     IPasswordHasher passwordHasher,
     UserSession session,
-    TimeProvider timeProvider) : IAuthService
+    TimeProvider timeProvider,
+    ILogger<AuthService> logger) : IAuthService
 {
     // Same message for unknown user and wrong password: don't reveal which usernames exist.
     const string InvalidCredentials = "Tên đăng nhập hoặc mật khẩu không đúng.";
@@ -21,6 +26,9 @@ internal sealed class AuthService(
         var account = await repository.GetByUsernameAsync(username.Trim(), cancellationToken);
         if (account is null || !passwordHasher.Verify(password, account.PasswordHash))
             return Result.Failure<SignedInUser>(InvalidCredentials);
+
+        if (passwordHasher.NeedsRehash(account.PasswordHash))
+            await UpgradePasswordHashAsync(account, password, cancellationToken);
 
         var user = new SignedInUser(account.Id, account.Username, account.MustChangePassword);
         session.Set(user);
@@ -51,4 +59,20 @@ internal sealed class AuthService(
     }
 
     public void SignOut() => session.Set(null);
+
+    // Sign-in is the only moment the plain password is available, so weak hashes are upgraded here.
+    // Best effort: a failed upgrade must never block a correct sign-in; the next sign-in retries.
+    async Task UpgradePasswordHashAsync(UserAccount account, string password, CancellationToken cancellationToken)
+    {
+        try
+        {
+            account.UpgradePasswordHash(passwordHasher.Hash(password), timeProvider.GetUtcNow().UtcDateTime);
+            await repository.UpdateAsync(account, cancellationToken);
+            logger.LogInformation("Upgraded password hash for account {AccountId}", account.Id);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not upgrade password hash for account {AccountId}", account.Id);
+        }
+    }
 }

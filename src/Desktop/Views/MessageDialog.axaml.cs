@@ -2,7 +2,10 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 
-namespace KiotVietTool.Desktop.Common.Dialogs;
+using KiotVietTool.Desktop.Models;
+using KiotVietTool.Desktop.Services;
+
+namespace KiotVietTool.Desktop.Views;
 
 /// <summary>Avalonia has no MessageBox; use through <see cref="IDialogService"/>.</summary>
 public sealed partial class MessageDialog : Window

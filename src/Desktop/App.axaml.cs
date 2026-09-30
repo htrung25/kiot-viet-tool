@@ -6,13 +6,9 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 
 using KiotVietTool.Application;
-using KiotVietTool.Desktop.Common.Dialogs;
-using KiotVietTool.Desktop.Common.Navigation;
-using KiotVietTool.Desktop.Common.Notifications;
-using KiotVietTool.Desktop.Common.Platform;
-using KiotVietTool.Desktop.Features.Auth;
-using KiotVietTool.Desktop.Features.Customers;
-using KiotVietTool.Desktop.Shell;
+using KiotVietTool.Desktop.Services;
+using KiotVietTool.Desktop.ViewModels;
+using KiotVietTool.Desktop.Views;
 using KiotVietTool.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -96,7 +92,7 @@ public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Appli
                 services.AddSingleton(new NavigationRoutes(
                     Login: typeof(LoginViewModel),
                     ChangePassword: typeof(ChangePasswordViewModel),
-                    Home: typeof(CustomerListViewModel)));
+                    Home: typeof(ProductListViewModel)));
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<INotificationService>(sp => new NotificationService(sp.GetRequiredService<MainWindow>()));
@@ -105,8 +101,7 @@ public sealed partial class App(SingleInstance? singleInstance) : Avalonia.Appli
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<LoginViewModel>();
                 services.AddTransient<ChangePasswordViewModel>();
-                services.AddTransient<CustomerListViewModel>();
-                services.AddTransient<CustomerEditViewModel>();
+                services.AddTransient<ProductListViewModel>();
             })
             .Build();
 

@@ -1,4 +1,4 @@
-namespace KiotVietTool.Infrastructure.Persistence;
+namespace KiotVietTool.Infrastructure.Options;
 
 public sealed class DatabaseOptions
 {

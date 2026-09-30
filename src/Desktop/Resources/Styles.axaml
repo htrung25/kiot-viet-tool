@@ -102,6 +102,40 @@
         <Setter Property="Foreground" Value="{StaticResource Danger}" />
     </Style>
 
+    <!-- Pagination -->
+    <Style Selector="Button.page">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Secondary}" />
+        <Setter Property="MinWidth" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.page:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Primary}" />
+    </Style>
+    <Style Selector="Button.page.current">
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.page.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource Primary.Soft}" />
+        <Setter Property="Foreground" Value="{StaticResource Primary}" />
+    </Style>
+    <Style Selector="Button.page:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Subtle}" />
+    </Style>
+    <Style Selector="ComboBox.compact">
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
     <!-- ===== Inputs ===== -->
     <Style Selector="TextBox">
         <Setter Property="CornerRadius" Value="8" />
@@ -128,6 +162,35 @@
         <Setter Property="Spacing" Value="6" />
     </Style>
 
+    <Style Selector="ComboBox">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Strong}" />
+        <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== Badges ===== -->
+    <Style Selector="Border.badge">
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{StaticResource Bg.Subtle}" />
+    </Style>
+    <Style Selector="Border.badge TextBlock">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{StaticResource Text.Muted}" />
+    </Style>
+    <Style Selector="Border.badge.success">
+        <Setter Property="Background" Value="{StaticResource Success.Soft}" />
+    </Style>
+    <Style Selector="Border.badge.success TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Success.Text}" />
+    </Style>
+
     <!-- ===== Surfaces ===== -->
     <Style Selector="Border.card">
         <Setter Property="Background" Value="{StaticResource Bg.Surface}" />
@@ -136,6 +199,12 @@
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="BoxShadow" Value="0 1 2 0 #0F172A0D" />
         <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.cardFooter">
+        <Setter Property="Background" Value="{StaticResource Bg.App}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Border.Default}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="Padding" Value="16,10" />
     </Style>
     <Style Selector="Border.divider">
         <Setter Property="Height" Value="1" />

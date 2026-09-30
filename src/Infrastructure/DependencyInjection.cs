@@ -1,8 +1,8 @@
-using KiotVietTool.Application.Features.Auth;
-using KiotVietTool.Application.Features.Customers;
-using KiotVietTool.Infrastructure.Features.Auth;
-using KiotVietTool.Infrastructure.Features.Customers;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Infrastructure.Options;
 using KiotVietTool.Infrastructure.Persistence;
+using KiotVietTool.Infrastructure.Repositories;
+using KiotVietTool.Infrastructure.Services;
 
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +34,6 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-        services.AddTransient<ICustomerRepository, CustomerRepository>();
         services.AddTransient<IUserAccountRepository, UserAccountRepository>();
         services.AddTransient<DatabaseInitializer>();
         return services;

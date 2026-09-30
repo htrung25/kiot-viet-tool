@@ -27,6 +27,10 @@
     <SolidColorBrush x:Key="Danger.SoftBorder" Color="#FECACA" />
     <SolidColorBrush x:Key="Danger.Text" Color="#B91C1C" />
 
+    <!-- Success (green) -->
+    <SolidColorBrush x:Key="Success.Soft" Color="#F0FDF4" />
+    <SolidColorBrush x:Key="Success.Text" Color="#15803D" />
+
     <!-- Warning (amber) -->
     <SolidColorBrush x:Key="Warning.Soft" Color="#FFFBEB" />
     <SolidColorBrush x:Key="Warning.SoftBorder" Color="#FDE68A" />

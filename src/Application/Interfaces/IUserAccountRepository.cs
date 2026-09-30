@@ -1,6 +1,6 @@
-using KiotVietTool.Domain.Auth;
+using KiotVietTool.Domain.Entities;
 
-namespace KiotVietTool.Application.Features.Auth;
+namespace KiotVietTool.Application.Interfaces;
 
 public interface IUserAccountRepository
 {

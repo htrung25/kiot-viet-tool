@@ -1,4 +1,4 @@
-using KiotVietTool.Domain.Auth;
+using KiotVietTool.Domain.Entities;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

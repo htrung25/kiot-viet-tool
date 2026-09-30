@@ -3,12 +3,10 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using KiotVietTool.Application.Features.Auth;
-using KiotVietTool.Desktop.Common.Navigation;
-using KiotVietTool.Desktop.Features.Auth;
-using KiotVietTool.Desktop.Features.Customers;
+using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Desktop.Services;
 
-namespace KiotVietTool.Desktop.Shell;
+namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class MainViewModel : ObservableObject
 {
@@ -37,17 +35,17 @@ public sealed partial class MainViewModel : ObservableObject
     public string? Username => _session.CurrentUser?.Username;
     public string UserInitial => Username is { Length: > 0 } name ? name[..1].ToUpperInvariant() : "";
 
-    public bool IsCustomersActive => Navigation.CurrentViewModel is CustomerListViewModel or CustomerEditViewModel;
+    public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
 
     void OnNavigationChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(INavigationService.CurrentViewModel))
-            OnPropertyChanged(nameof(IsCustomersActive));
+            OnPropertyChanged(nameof(IsProductsActive));
     }
 
     [RelayCommand]
-    Task OpenCustomersAsync(CancellationToken cancellationToken) =>
-        Navigation.NavigateToAsync<CustomerListViewModel>(null, cancellationToken);
+    Task OpenProductsAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<ProductListViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task ChangePasswordAsync(CancellationToken cancellationToken) =>
