@@ -1,7 +1,6 @@
 using System.Globalization;
 
 using KiotVietTool.Application.Common;
-using KiotVietTool.Application.Enums;
 using KiotVietTool.Domain.Enums;
 
 namespace KiotVietTool.Desktop.Models;
@@ -20,17 +19,17 @@ public static class DisplayFormat
     public static string DiscountValue(DiscountEnum type, decimal value) =>
         type == DiscountEnum.Percent ? value.ToString("0.##", Vietnamese) + "%" : Money(value);
 
-    public static string Status(ProgramDisplayStatusEnum status) => status switch
+    public static string Status(ProgramStatusEnum status) => status switch
     {
-        ProgramDisplayStatusEnum.Draft => "Nháp",
-        ProgramDisplayStatusEnum.Deploying => "Đang triển khai",
-        ProgramDisplayStatusEnum.Scheduled => "Đã lên lịch",
-        ProgramDisplayStatusEnum.Running => "Đang chạy",
-        ProgramDisplayStatusEnum.Ended => "Đã kết thúc",
-        ProgramDisplayStatusEnum.NeedsRedeploy => "Cần triển khai lại",
-        ProgramDisplayStatusEnum.DeployFailed => "Lỗi triển khai",
-        ProgramDisplayStatusEnum.StopFailed => "Đang dừng — lỗi",
-        ProgramDisplayStatusEnum.Cancelled => "Đã huỷ",
+        ProgramStatusEnum.Draft => "Nháp",
+        ProgramStatusEnum.Scheduled => "Đã lên lịch",
+        ProgramStatusEnum.Applying => "Đang áp giá",
+        ProgramStatusEnum.Running => "Đang chạy",
+        ProgramStatusEnum.ApplyFailed => "Lỗi áp giá",
+        ProgramStatusEnum.Restoring => "Đang trả giá",
+        ProgramStatusEnum.RestoreFailed => "Lỗi trả giá",
+        ProgramStatusEnum.Ended => "Đã kết thúc",
+        ProgramStatusEnum.Stopped => "Đã dừng",
         _ => status.ToString(),
     };
 }

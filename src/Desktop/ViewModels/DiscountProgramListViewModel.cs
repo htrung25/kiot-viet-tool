@@ -1,10 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using KiotVietTool.Application.Enums;
 using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Desktop.Models;
 using KiotVietTool.Desktop.Services;
+using KiotVietTool.Domain.Enums;
 
 namespace KiotVietTool.Desktop.ViewModels;
 
@@ -16,9 +16,9 @@ public sealed partial class DiscountProgramListViewModel(
 {
     IReadOnlyList<DiscountProgramItem> _all = [];
 
-    public IReadOnlyList<FilterOption<ProgramDisplayStatusEnum?>> StatusOptions { get; } =
-        [new("Tất cả trạng thái", null), .. Enum.GetValues<ProgramDisplayStatusEnum>()
-            .Select(s => new FilterOption<ProgramDisplayStatusEnum?>(DisplayFormat.Status(s), s))];
+    public IReadOnlyList<FilterOption<ProgramStatusEnum?>> StatusOptions { get; } =
+        [new("Tất cả trạng thái", null), .. Enum.GetValues<ProgramStatusEnum>()
+            .Select(s => new FilterOption<ProgramStatusEnum?>(DisplayFormat.Status(s), s))];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPrograms), nameof(ShowNoResults))]
@@ -28,7 +28,7 @@ public sealed partial class DiscountProgramListViewModel(
     [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowNoResults))]
     public partial bool HasData { get; private set; }
 
-    [ObservableProperty] public partial FilterOption<ProgramDisplayStatusEnum?>? SelectedStatus { get; set; }
+    [ObservableProperty] public partial FilterOption<ProgramStatusEnum?>? SelectedStatus { get; set; }
     [ObservableProperty] public partial bool IncludeLongEnded { get; set; }
 
     public bool HasPrograms => Programs.Count > 0;
@@ -40,10 +40,6 @@ public sealed partial class DiscountProgramListViewModel(
         SelectedStatus = StatusOptions[0];
         await ReloadAsync(cancellationToken);
     }
-
-    partial void OnSelectedStatusChanged(FilterOption<ProgramDisplayStatusEnum?>? value) => ApplyFilter();
-
-    async partial void OnIncludeLongEndedChanged(bool value) => await ReloadAsync(CancellationToken.None);
 
     [RelayCommand]
     Task CreateAsync(CancellationToken cancellationToken) =>

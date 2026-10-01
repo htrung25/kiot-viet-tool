@@ -19,9 +19,10 @@ internal sealed class DiscountProgramConfiguration : IEntityTypeConfiguration<Di
         builder.Property(p => p.Scope).HasConversion<int>();
         builder.Property(p => p.UnitScope).HasConversion<int>();
         builder.Property(p => p.Status).HasConversion<int>();
+        builder.Property(p => p.StartMode).HasConversion<int>();
         builder.PrimitiveCollection(p => p.CategoryIds);
         builder.PrimitiveCollection(p => p.ProductIds);
         builder.PrimitiveCollection(p => p.ExcludedProductIds);
-        builder.HasIndex(p => p.TargetPriceBookId).IsUnique();
+        builder.HasIndex(p => p.Status);
     }
 }

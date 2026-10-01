@@ -3,7 +3,6 @@ using KiotVietTool.Application.DTOs;
 using KiotVietTool.Application.Exceptions;
 using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Domain.Entities;
-using KiotVietTool.Domain.Enums;
 using KiotVietTool.Domain.Exceptions;
 
 using Microsoft.Extensions.Logging;
@@ -16,7 +15,6 @@ internal sealed class KiotVietConnectionService(
     ISecretProtectorService secretProtector,
     ICatalogSyncService sync,
     IDiscountProgramRepository programs,
-    TimeProvider timeProvider,
     ILogger<KiotVietConnectionService> logger) : IKiotVietConnectionService
 {
     public async Task<KiotVietConnectionDto?> GetAsync(CancellationToken cancellationToken = default) =>
@@ -71,12 +69,11 @@ internal sealed class KiotVietConnectionService(
     {
         if (sync.IsRunning) return Result.Failure("Đang đồng bộ dữ liệu. Hãy chờ đồng bộ xong rồi ngắt kết nối.");
 
-        var now = timeProvider.GetUtcNow().UtcDateTime;
         var active = (await programs.GetAllAsync(cancellationToken))
-            .Where(p => p.Status is not (ProgramStatusEnum.Draft or ProgramStatusEnum.Cancelled) && !p.IsEndedAt(now))
+            .Where(p => p.HoldsKiotVietPrices)
             .Select(p => p.Name).ToList();
         if (active.Count > 0)
-            return Result.Failure($"Còn chương trình đã triển khai chưa kết thúc: {string.Join(", ", active)}. Hãy dừng các chương trình này trước khi ngắt kết nối.");
+            return Result.Failure($"Còn chương trình đang giữ giá giảm trên KiotViet: {string.Join(", ", active)}. Hãy dừng các chương trình này (trả giá gốc) trước khi ngắt kết nối.");
 
         await repository.DeleteWithSyncedDataAsync(cancellationToken);
         logger.LogInformation("KiotViet connection removed with its synced data");

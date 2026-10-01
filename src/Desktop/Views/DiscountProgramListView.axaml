@@ -14,7 +14,7 @@
             </Button>
             <StackPanel Spacing="4">
                 <TextBlock Text="Chương trình giảm giá" Classes="h1" />
-                <TextBlock Text="Giảm giá có thời hạn theo % hoặc số tiền, ghi lên bảng giá KiotViet." Classes="subtitle" />
+                <TextBlock Text="Giảm giá có thời hạn theo % hoặc số tiền; tool tự đổi giá bán trên KiotViet khi bắt đầu và trả giá gốc khi kết thúc." Classes="subtitle" />
             </StackPanel>
         </DockPanel>
 
@@ -66,7 +66,7 @@
                             <DataGridTemplateColumn Width="120">
                                 <DataTemplate x:DataType="models:DiscountProgramItem">
                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" Margin="0,0,4,0">
-                                        <Button Classes="icon" ToolTip.Tip="Sửa" IsVisible="{Binding IsDraft}"
+                                        <Button Classes="icon" ToolTip.Tip="Sửa" IsVisible="{Binding IsEditable}"
                                                 Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).EditCommand}"
                                                 CommandParameter="{Binding}">
                                             <PathIcon Data="{StaticResource Icon.Edit}" />
@@ -76,7 +76,7 @@
                                                 CommandParameter="{Binding}">
                                             <PathIcon Data="{StaticResource Icon.Copy}" />
                                         </Button>
-                                        <Button Classes="icon danger" ToolTip.Tip="Xoá" IsVisible="{Binding IsDraft}"
+                                        <Button Classes="icon danger" ToolTip.Tip="Xoá" IsVisible="{Binding IsEditable}"
                                                 Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).DeleteCommand}"
                                                 CommandParameter="{Binding}">
                                             <PathIcon Data="{StaticResource Icon.Delete}" />
@@ -93,7 +93,7 @@
                             <PathIcon Data="{StaticResource Icon.Tag}" />
                         </Border>
                         <TextBlock Text="Chưa có chương trình giảm giá" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
-                        <TextBlock Text="Tạo bảng giá trên KiotViet cho chương trình, đồng bộ, rồi tạo chương trình để tính giá giảm."
+                        <TextBlock Text="Tạo chương trình, chọn mức giảm, thời gian và sản phẩm áp dụng. Mọi thiết lập nằm trong tool."
                                    Classes="subtitle" TextAlignment="Center" />
                         <Button Classes="accent" Content="Tạo chương trình" HorizontalAlignment="Center" Margin="0,6,0,0"
                                 Command="{Binding CreateCommand}" />

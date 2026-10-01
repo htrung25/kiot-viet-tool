@@ -1,4 +1,3 @@
-using KiotVietTool.Application.Enums;
 using KiotVietTool.Domain.Enums;
 
 namespace KiotVietTool.Application.DTOs;
@@ -8,9 +7,10 @@ public sealed record DiscountProgramListItemDto(
     string Name,
     DiscountEnum Type,
     decimal Value,
-    DateTime StartAtUtc,
+    StartModeEnum StartMode,
+    DateTime? StartAtUtc,
     DateTime EndAtUtc,
-    string PriceBookName,
     ScopeEnum Scope,
     int ScopeItemCount,
-    ProgramDisplayStatusEnum Status);
+    ProgramStatusEnum Status,
+    bool IsOverdue);

@@ -6,6 +6,4 @@ public sealed record DiscountPreviewDto(
     int ExcludedCount,
     decimal TotalDiscount,
     int ConflictCount,
-    IReadOnlyList<OverlappingPriceBookDto> OverlappingPriceBooks,
-    int ForeignItemsInTarget,
-    TargetPriceBookDto Target);
+    IReadOnlyList<OverlappingPriceBookDto> OverlappingPriceBooks);

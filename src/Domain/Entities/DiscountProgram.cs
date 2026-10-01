@@ -8,14 +8,16 @@ public sealed class DiscountProgram
     public const int NameMaxLength = 100;
     public const int NoteMaxLength = 500;
     public const decimal MaxAmount = 1_000_000_000;
+    public static readonly TimeSpan MinDuration = TimeSpan.FromMinutes(5);
+    public static readonly TimeSpan MaxDuration = TimeSpan.FromDays(366);
 
     public int Id { get; private set; }
     public string Name { get; private set; } = "";
     public DiscountEnum Type { get; private set; }
     public decimal Value { get; private set; }
     public RoundingEnum Rounding { get; private set; }
-    public long TargetPriceBookId { get; private set; }
-    public DateTime StartAtUtc { get; private set; }
+    public StartModeEnum StartMode { get; private set; }
+    public DateTime? StartAtUtc { get; private set; }
     public DateTime EndAtUtc { get; private set; }
     public ScopeEnum Scope { get; private set; }
     public List<int> CategoryIds { get; private set; } = [];
@@ -30,28 +32,30 @@ public sealed class DiscountProgram
     private DiscountProgram() { } // EF Core
 
     public static DiscountProgram Create(string name, DiscountEnum type, decimal value, RoundingEnum rounding,
-        PriceBook targetPriceBook, ScopeEnum scope, IEnumerable<int> categoryIds, IEnumerable<long> productIds,
-        IEnumerable<long> excludedProductIds, UnitScopeEnum unitScope, string? note, DateTime nowUtc)
+        StartModeEnum startMode, DateTime? startAtUtc, DateTime endAtUtc, ScopeEnum scope, IEnumerable<int> categoryIds,
+        IEnumerable<long> productIds, IEnumerable<long> excludedProductIds, UnitScopeEnum unitScope, string? note, DateTime nowUtc)
     {
         var program = new DiscountProgram { Status = ProgramStatusEnum.Draft, CreatedAtUtc = nowUtc };
-        program.Update(name, type, value, rounding, targetPriceBook, scope, categoryIds, productIds, excludedProductIds,
-            unitScope, note, nowUtc);
+        program.Update(name, type, value, rounding, startMode, startAtUtc, endAtUtc, scope, categoryIds, productIds,
+            excludedProductIds, unitScope, note, nowUtc);
         return program;
     }
 
-    public void Update(string name, DiscountEnum type, decimal value, RoundingEnum rounding, PriceBook targetPriceBook,
-        ScopeEnum scope, IEnumerable<int> categoryIds, IEnumerable<long> productIds, IEnumerable<long> excludedProductIds,
-        UnitScopeEnum unitScope, string? note, DateTime nowUtc)
+    public void Update(string name, DiscountEnum type, decimal value, RoundingEnum rounding, StartModeEnum startMode,
+        DateTime? startAtUtc, DateTime endAtUtc, ScopeEnum scope, IEnumerable<int> categoryIds, IEnumerable<long> productIds,
+        IEnumerable<long> excludedProductIds, UnitScopeEnum unitScope, string? note, DateTime nowUtc)
     {
-        if (Status != ProgramStatusEnum.Draft)
-            throw new DomainException("Chỉ sửa được toàn bộ thông tin khi chương trình còn là nháp.");
+        if (!IsEditable)
+            throw new DomainException("Chỉ sửa được toàn bộ thông tin khi chương trình còn là nháp hoặc chưa tới giờ bắt đầu.");
 
         name = name.Trim();
         EnsureValidName(name);
         EnsureValidValue(type, value);
         if (!Enum.IsDefined(rounding)) throw new DomainException("Kiểu làm tròn không hợp lệ.");
         if (!Enum.IsDefined(unitScope)) throw new DomainException("Đơn vị tính áp dụng không hợp lệ.");
-        EnsureValidTarget(targetPriceBook, nowUtc);
+        startAtUtc = startMode == StartModeEnum.Scheduled && startAtUtc is { } start ? TruncateToMinute(start) : null;
+        endAtUtc = TruncateToMinute(endAtUtc);
+        EnsureValidPeriod(startMode, startAtUtc, endAtUtc, nowUtc);
 
         List<int> categories = [.. categoryIds.Distinct()];
         List<long> products = [.. productIds.Distinct()];
@@ -82,9 +86,9 @@ public sealed class DiscountProgram
         Type = type;
         Value = value;
         Rounding = rounding;
-        TargetPriceBookId = targetPriceBook.Id;
-        StartAtUtc = targetPriceBook.StartAtUtc!.Value;
-        EndAtUtc = targetPriceBook.EndAtUtc!.Value;
+        StartMode = startMode;
+        StartAtUtc = startAtUtc;
+        EndAtUtc = endAtUtc;
         Scope = scope;
         CategoryIds = categories;
         ProductIds = products;
@@ -96,13 +100,26 @@ public sealed class DiscountProgram
 
     public bool IsDraft => Status == ProgramStatusEnum.Draft;
 
+    public bool IsEditable => Status is ProgramStatusEnum.Draft or ProgramStatusEnum.Scheduled;
+
+    public bool IsFinished => Status is ProgramStatusEnum.Ended or ProgramStatusEnum.Stopped;
+
+    public bool HoldsKiotVietPrices => Status is ProgramStatusEnum.Applying or ProgramStatusEnum.Running
+        or ProgramStatusEnum.ApplyFailed or ProgramStatusEnum.Restoring or ProgramStatusEnum.RestoreFailed;
+
+    public DateTime EffectiveStartAt(DateTime nowUtc) => StartAtUtc ?? nowUtc;
+
     public bool IsEndedAt(DateTime nowUtc) => EndAtUtc <= nowUtc;
 
-    public bool OverlapsWith(DateTime startUtc, DateTime endUtc) => StartAtUtc < endUtc && startUtc < EndAtUtc;
+    public bool IsOverdueAt(DateTime nowUtc) => HoldsKiotVietPrices && IsEndedAt(nowUtc);
+
+    public bool OverlapsWith(DateTime startUtc, DateTime endUtc, DateTime nowUtc) =>
+        EffectiveStartAt(nowUtc) < endUtc && startUtc < EndAtUtc;
 
     public void EnsureCanDelete()
     {
-        if (!IsDraft) throw new DomainException("Chỉ xoá được chương trình nháp. Chương trình đã triển khai hãy dùng Dừng chương trình.");
+        if (!IsEditable)
+            throw new DomainException("Chỉ xoá được chương trình chưa áp giá lên KiotViet. Chương trình đã áp giá hãy dùng Dừng chương trình.");
     }
 
     public PriceQuote Quote(Product product)
@@ -154,14 +171,25 @@ public sealed class DiscountProgram
         }
     }
 
-    public static void EnsureValidTarget(PriceBook priceBook, DateTime nowUtc)
+    public static void EnsureValidPeriod(StartModeEnum startMode, DateTime? startAtUtc, DateTime endAtUtc, DateTime nowUtc)
     {
-        if (priceBook.IsDeleted) throw new DomainException("Bảng giá đích không còn trên KiotViet.");
-        if (priceBook.IsGlobal) throw new DomainException("Không dùng Bảng giá chung làm bảng giá đích.");
-        if (priceBook.StartAtUtc is null) throw new DomainException("Bảng giá cần có ngày bắt đầu.");
-        if (priceBook.EndAtUtc is not { } end || end <= nowUtc) throw new DomainException("Bảng giá cần có ngày kết thúc chưa qua.");
-        if (end <= priceBook.StartAtUtc) throw new DomainException("Ngày kết thúc của bảng giá phải sau ngày bắt đầu.");
+        if (!Enum.IsDefined(startMode)) throw new DomainException("Cách bắt đầu không hợp lệ.");
+        DateTime start;
+        if (startMode == StartModeEnum.Scheduled)
+        {
+            start = startAtUtc ?? throw new DomainException("Chọn thời điểm bắt đầu.");
+            if (start <= nowUtc) throw new DomainException("Thời điểm bắt đầu không được ở quá khứ.");
+        }
+        else start = nowUtc;
+
+        if (endAtUtc - start < MinDuration)
+            throw new DomainException("Thời điểm kết thúc phải sau thời điểm bắt đầu ít nhất 5 phút.");
+        if (endAtUtc - start > MaxDuration)
+            throw new DomainException("Chương trình kéo dài tối đa 366 ngày.");
     }
+
+    static DateTime TruncateToMinute(DateTime value) =>
+        new(value.Ticks - value.Ticks % TimeSpan.TicksPerMinute, value.Kind);
 
     public readonly record struct PriceQuote(decimal? DiscountedPrice, ExclusionReasonEnum? Reason)
     {

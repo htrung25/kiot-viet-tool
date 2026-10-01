@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
              xmlns:models="using:KiotVietTool.Desktop.Models"
-             xmlns:dtos="using:KiotVietTool.Application.DTOs"
              x:Class="KiotVietTool.Desktop.Views.DiscountProgramEditorView"
              x:DataType="vm:DiscountProgramEditorViewModel">
     <Grid Classes="page" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
@@ -80,45 +79,38 @@
                         </Grid>
 
                         <StackPanel Classes="field">
-                            <TextBlock Text="Bảng giá đích trên KiotViet" Classes="label" />
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Classes="secondary" Margin="8,0,0,0"
-                                        Command="{Binding SyncPriceBooksCommand}" IsEnabled="{Binding IsIdle}"
-                                        ToolTip.Tip="Tải lại danh sách bảng giá từ KiotViet">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <PathIcon Data="{StaticResource Icon.Sync}" />
-                                        <TextBlock Text="Đồng bộ" />
-                                    </StackPanel>
-                                </Button>
-                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding TargetPriceBooks}"
-                                          SelectedItem="{Binding SelectedTarget}" PlaceholderText="Chọn bảng giá">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="dtos:TargetPriceBookDto">
-                                            <StackPanel Spacing="1">
-                                                <TextBlock Text="{Binding Name}" FontWeight="Medium" />
-                                                <TextBlock Classes="caption"
-                                                           Text="{Binding Problem, TargetNullValue='Có thể dùng'}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </DockPanel>
-                            <Border Classes="stat" IsVisible="{Binding HasTarget}" Margin="0,4,0,0">
-                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="4">
-                                    <TextBlock Text="Thời gian" Classes="caption" />
-                                    <TextBlock Grid.Column="1" Text="{Binding TargetPeriodText}" FontWeight="Medium" />
-                                    <TextBlock Grid.Row="1" Text="Áp dụng" Classes="caption" />
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TargetScopeText}" TextWrapping="Wrap" />
-                                </Grid>
-                            </Border>
-                            <TextBlock Text="Thời gian chương trình lấy từ bảng giá. Muốn đổi thời gian, sửa bảng giá trên KiotViet rồi đồng bộ."
-                                       Classes="caption" TextWrapping="Wrap" />
+                            <TextBlock Text="Bắt đầu" Classes="label" />
+                            <StackPanel Orientation="Horizontal" Spacing="20">
+                                <RadioButton GroupName="StartMode" Content="Ngay khi áp dụng" IsChecked="{Binding IsStartNow}" />
+                                <RadioButton GroupName="StartMode" Content="Hẹn giờ" IsChecked="{Binding !IsStartNow}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !IsStartNow}">
+                                <CalendarDatePicker SelectedDate="{Binding StartDate}" Width="170"
+                                                    SelectedDateFormat="Custom" CustomDateFormatString="dd/MM/yyyy" />
+                                <TimePicker SelectedTime="{Binding StartTime}" ClockIdentifier="24HourClock" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Kết thúc" Classes="label" />
+                            <WrapPanel>
+                                <CalendarDatePicker SelectedDate="{Binding EndDate}" Width="170" Margin="0,0,10,8"
+                                                    SelectedDateFormat="Custom" CustomDateFormatString="dd/MM/yyyy" />
+                                <TimePicker SelectedTime="{Binding EndTime}" ClockIdentifier="24HourClock" Margin="0,0,16,8" />
+                                <Button Classes="secondary" Content="+1 ngày" Margin="0,0,6,8"
+                                        Command="{Binding SetDurationCommand}" CommandParameter="1" />
+                                <Button Classes="secondary" Content="+3 ngày" Margin="0,0,6,8"
+                                        Command="{Binding SetDurationCommand}" CommandParameter="3" />
+                                <Button Classes="secondary" Content="+7 ngày" Margin="0,0,6,8"
+                                        Command="{Binding SetDurationCommand}" CommandParameter="7" />
+                            </WrapPanel>
+                            <TextBlock Text="{Binding DurationText}" Classes="caption" />
                         </StackPanel>
 
                         <Border Classes="alert warning">
                             <DockPanel>
                                 <PathIcon Data="{StaticResource Icon.Info}" />
-                                <TextBlock Text="Chưa có bảng giá? Trên KiotViet tạo bảng giá mới đặt tên [TOOL] + tên chương trình, đặt ngày giờ bắt đầu và kết thúc, chọn chi nhánh áp dụng và để trống danh sách hàng. Sau đó bấm Đồng bộ ở trên." />
+                                <TextBlock Text="Khi chương trình bắt đầu, tool đổi giá bán của sản phẩm trên KiotViet thành giá đã giảm; khi kết thúc, tool trả lại giá gốc. Thu ngân bán hàng như bình thường." />
                             </DockPanel>
                         </Border>
 
@@ -202,16 +194,11 @@
                     </Grid>
 
                     <StackPanel Grid.Row="1" Margin="16,12,16,0" Spacing="8">
+                        <TextBlock Text="{Binding PeriodText}" Classes="caption" />
                         <Border Classes="alert error" IsVisible="{Binding HasConflicts}">
                             <DockPanel>
                                 <PathIcon Data="{StaticResource Icon.AlertCircle}" />
                                 <TextBlock Text="{Binding ConflictText}" />
-                            </DockPanel>
-                        </Border>
-                        <Border Classes="alert warning" IsVisible="{Binding HasForeignItems}">
-                            <DockPanel>
-                                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
-                                <TextBlock Text="{Binding ForeignItemsText}" />
                             </DockPanel>
                         </Border>
                         <Border Classes="alert warning" IsVisible="{Binding HasOverlappingPriceBooks}">

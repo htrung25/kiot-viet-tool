@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using KiotVietTool.Application.Common;
 using KiotVietTool.Application.DTOs;
 using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Desktop.Models;
@@ -15,19 +16,19 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
 {
     readonly IDiscountProgramService _programs;
     readonly ICatalogService _catalog;
-    readonly ICatalogSyncService _sync;
+    readonly TimeProvider _timeProvider;
     readonly INavigationService _navigation;
     readonly IDialogService _dialogs;
     readonly INotificationService _notifications;
     int? _programId;
     IReadOnlyList<PreviewRowItem> _previewRows = [];
 
-    public DiscountProgramEditorViewModel(IDiscountProgramService programs, ICatalogService catalog, ICatalogSyncService sync,
+    public DiscountProgramEditorViewModel(IDiscountProgramService programs, ICatalogService catalog, TimeProvider timeProvider,
         INavigationService navigation, IDialogService dialogs, INotificationService notifications)
     {
         _programs = programs;
         _catalog = catalog;
-        _sync = sync;
+        _timeProvider = timeProvider;
         _navigation = navigation;
         _dialogs = dialogs;
         _notifications = notifications;
@@ -35,6 +36,11 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
         ExcludedProducts = new ProductPickerViewModel(catalog, "Tìm sản phẩm cần loại trừ", "Không loại trừ sản phẩm nào.");
         SelectedRounding = RoundingOptions[^1];
         SelectedPreviewFilter = PreviewFilterOptions[0];
+        var now = NowVietnam;
+        var nextHour = now.Date.AddHours(now.Hour + 1);
+        StartDate = nextHour.Date;
+        StartTime = nextHour.TimeOfDay;
+        SetEnd(RoundUpToFiveMinutes(now.AddDays(3)));
     }
 
     public ProductPickerViewModel ScopeProducts { get; }
@@ -75,11 +81,26 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
 
     [ObservableProperty] public partial string ValueText { get; set; } = "";
     [ObservableProperty] public partial FilterOption<RoundingEnum>? SelectedRounding { get; set; }
-    [ObservableProperty] public partial IReadOnlyList<TargetPriceBookDto> TargetPriceBooks { get; private set; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasTarget), nameof(TargetPeriodText), nameof(TargetScopeText))]
-    public partial TargetPriceBookDto? SelectedTarget { get; set; }
+    [NotifyPropertyChangedFor(nameof(DurationText))]
+    public partial bool IsStartNow { get; set; } = true;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationText))]
+    public partial DateTime? StartDate { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationText))]
+    public partial TimeSpan? StartTime { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationText))]
+    public partial DateTime? EndDate { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationText))]
+    public partial TimeSpan? EndTime { get; set; }
 
     [ObservableProperty] public partial string? Note { get; set; }
 
@@ -92,7 +113,7 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPreview), nameof(AppliedText), nameof(ExcludedText), nameof(TotalDiscountText),
         nameof(HasConflicts), nameof(ConflictText), nameof(HasOverlappingPriceBooks), nameof(OverlappingText),
-        nameof(HasForeignItems), nameof(ForeignItemsText), nameof(HighDiscountCount), nameof(HasHighDiscount), nameof(HighDiscountText))]
+        nameof(HighDiscountCount), nameof(HasHighDiscount), nameof(HighDiscountText), nameof(PeriodText))]
     public partial DiscountPreviewDto? Preview { get; private set; }
 
     [ObservableProperty]
@@ -111,14 +132,23 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     public bool IsIdle => !IsBusy;
     public string ValueSuffix => IsPercent ? "%" : "₫";
     public string ValueHint => IsPercent ? "Lớn hơn 0 và nhỏ hơn 100, tối đa 2 chữ số thập phân." : "Số tiền giảm trên mỗi sản phẩm, ví dụ 20.000.";
-    public bool HasTarget => SelectedTarget is not null;
-    public string TargetPeriodText => SelectedTarget is { } t
-        ? $"{DisplayFormat.DateTime(t.StartAtUtc)} – {DisplayFormat.DateTime(t.EndAtUtc)}"
-        : "";
-    public string TargetScopeText => SelectedTarget is { } t
-        ? (t.ForAllBranches ? "Tất cả chi nhánh" : $"{t.BranchCount} chi nhánh")
-          + (t.ForAllCustomerGroups ? "" : " · chỉ một số nhóm khách hàng")
-          + (t.ItemCount > 0 ? $" · đang có {DisplayFormat.Number(t.ItemCount)} sản phẩm" : " · chưa có sản phẩm")
+    public string DurationText
+    {
+        get
+        {
+            var start = IsStartNow ? NowVietnam : Combine(StartDate, StartTime);
+            if (start is null || Combine(EndDate, EndTime) is not { } end || end <= start) return "";
+            var duration = end - start.Value;
+            var parts = new List<string>();
+            if (duration.Days > 0) parts.Add($"{duration.Days} ngày");
+            if (duration.Hours > 0) parts.Add($"{duration.Hours} giờ");
+            if (duration.Days == 0 && duration.Minutes > 0) parts.Add($"{duration.Minutes} phút");
+            return parts.Count == 0 ? "" : "Thời lượng: " + string.Join(" ", parts);
+        }
+    }
+
+    public string PeriodText => BuildRequest(ScopeEnum.AllProducts, reportErrors: false) is { } r
+        ? $"Thời gian: {(r.StartAtUtc is { } s ? DisplayFormat.DateTime(s) : "ngay khi áp dụng")} → {DisplayFormat.DateTime(r.EndAtUtc)}"
         : "";
 
     public bool HasPreview => Preview is not null;
@@ -127,14 +157,12 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     public string ExcludedText => DisplayFormat.Number(Preview?.ExcludedCount ?? 0);
     public string TotalDiscountText => DisplayFormat.Money(Preview?.TotalDiscount ?? 0);
     public bool HasConflicts => Preview?.ConflictCount > 0;
-    public string ConflictText => $"{Preview?.ConflictCount} sản phẩm đang thuộc chương trình khác trong cùng thời gian. Loại trừ các sản phẩm này ở bước Phạm vi hoặc chọn bảng giá có thời gian khác.";
+    public string ConflictText => $"{Preview?.ConflictCount} sản phẩm đang thuộc chương trình khác trong cùng thời gian. Loại trừ các sản phẩm này ở bước Phạm vi hoặc chọn thời gian khác.";
     public bool HasOverlappingPriceBooks => Preview?.OverlappingPriceBooks.Count > 0;
     public string OverlappingText => Preview is { } p
-        ? "Sản phẩm cũng nằm trong bảng giá khác có thời gian chồng lấn, KiotViet có thể áp bảng giá đó: "
+        ? "Sản phẩm đang nằm trong bảng giá KiotViet khác có thời gian chồng lấn; nếu thu ngân chọn bảng giá đó, màn bán hàng sẽ không hiện giá giảm: "
           + string.Join(", ", p.OverlappingPriceBooks.Select(b => $"{b.Name} ({b.ProductCount} SP)"))
         : "";
-    public bool HasForeignItems => Preview?.ForeignItemsInTarget > 0;
-    public string ForeignItemsText => $"Bảng giá đích đang có {Preview?.ForeignItemsInTarget} sản phẩm không thuộc chương trình. Giá của các sản phẩm này trên KiotViet không bị tool thay đổi.";
     public int HighDiscountCount => Preview?.Rows.Count(r => r.HasHighDiscount) ?? 0;
     public bool HasHighDiscount => HighDiscountCount > 0;
     public string HighDiscountText => $"{DisplayFormat.Number(HighDiscountCount)} sản phẩm được giảm từ 50% trở lên. Kiểm tra lại mức giảm.";
@@ -150,7 +178,6 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
         _programId = existing?.Id;
         Title = _programId is null ? "Tạo chương trình giảm giá" : "Sửa chương trình giảm giá";
 
-        TargetPriceBooks = await _programs.GetTargetPriceBooksAsync(_programId, cancellationToken);
         var categories = await _catalog.GetCategoriesAsync(cancellationToken);
         var selectedCategories = existing?.CategoryIds.ToHashSet() ?? [];
         Categories = [.. CategoryTree.Flatten(categories)
@@ -163,7 +190,14 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
             ? existing.Value.ToString("0.##", DisplayFormat.Vietnamese)
             : existing.Value.ToString("#,##0", DisplayFormat.Vietnamese);
         SelectedRounding = RoundingOptions.FirstOrDefault(o => o.Value == existing.Rounding) ?? RoundingOptions[^1];
-        SelectedTarget = TargetPriceBooks.FirstOrDefault(b => b.Id == existing.TargetPriceBookId);
+        IsStartNow = existing.StartMode == StartModeEnum.Immediately;
+        if (existing.StartAtUtc is { } startAt)
+        {
+            var startLocal = VietnamTime.FromUtc(startAt);
+            StartDate = startLocal.Date;
+            StartTime = startLocal.TimeOfDay;
+        }
+        SetEnd(VietnamTime.FromUtc(existing.EndAtUtc));
         Note = existing.Note;
         IsScopeAll = existing.Scope == ScopeEnum.AllProducts;
         IsScopeCategories = existing.Scope == ScopeEnum.Categories;
@@ -223,20 +257,10 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     async Task SaveAsync(CancellationToken cancellationToken)
     {
         ErrorMessage = null;
-        if (BuildRequest() is not { } request || Preview is not { } preview) return;
-
-        var acknowledge = false;
-        if (preview.ForeignItemsInTarget > 0)
-        {
-            acknowledge = await _dialogs.ConfirmAsync("Dùng bảng giá đang có sản phẩm khác?",
-                $"Bảng giá \"{preview.Target.Name}\" đang có {preview.ForeignItemsInTarget} sản phẩm không thuộc chương trình. " +
-                "Các sản phẩm đó vẫn giữ giá hiện tại trong bảng giá khi chương trình chạy.",
-                "Vẫn dùng bảng giá này");
-            if (!acknowledge) return;
-        }
+        if (BuildRequest() is not { } request || Preview is null) return;
 
         IsBusy = true;
-        var result = await _programs.SaveAsync(request, acknowledge, cancellationToken);
+        var result = await _programs.SaveAsync(request, cancellationToken);
         IsBusy = false;
         if (!result.IsSuccess)
         {
@@ -249,22 +273,10 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    async Task SyncPriceBooksAsync(CancellationToken cancellationToken)
+    void SetDuration(string days)
     {
-        ErrorMessage = null;
-        IsBusy = true;
-        var result = await _sync.SyncAsync(null, cancellationToken);
-        IsBusy = false;
-        if (!result.IsSuccess)
-        {
-            ErrorMessage = result.Error;
-            return;
-        }
-
-        var selectedId = SelectedTarget?.Id;
-        TargetPriceBooks = await _programs.GetTargetPriceBooksAsync(_programId, cancellationToken);
-        SelectedTarget = TargetPriceBooks.FirstOrDefault(b => b.Id == selectedId);
-        _notifications.ShowSuccess($"Đã đồng bộ, có {DisplayFormat.Number(TargetPriceBooks.Count)} bảng giá.");
+        var start = IsStartNow ? NowVietnam : Combine(StartDate, StartTime) ?? NowVietnam;
+        SetEnd(RoundUpToFiveMinutes(start.AddDays(int.Parse(days, CultureInfo.InvariantCulture))));
     }
 
     partial void OnSelectedPreviewFilterChanged(FilterOption<int>? value) => ApplyPreviewFilter();
@@ -286,19 +298,46 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
         PreviewRows = [.. rows];
     }
 
-    SaveDiscountProgramDto? BuildRequest(ScopeEnum? scopeOverride = null)
+    SaveDiscountProgramDto? BuildRequest(ScopeEnum? scopeOverride = null, bool reportErrors = true)
     {
+        string? error = null;
+        DateTime? startAtUtc = null;
         if (!TryParseValue(out var value))
+            error = IsPercent ? "Nhập mức giảm %, ví dụ 10 hoặc 12,5." : "Nhập số tiền giảm, ví dụ 20.000.";
+        else if (!IsStartNow && Combine(StartDate, StartTime) is not { } start)
+            error = "Chọn ngày và giờ bắt đầu.";
+        else if (Combine(EndDate, EndTime) is not { } end)
+            error = "Chọn ngày và giờ kết thúc.";
+        else
         {
-            ErrorMessage = IsPercent ? "Nhập mức giảm %, ví dụ 10 hoặc 12,5." : "Nhập số tiền giảm, ví dụ 20.000.";
-            return null;
+            if (!IsStartNow) startAtUtc = VietnamTime.ToUtc(Combine(StartDate, StartTime)!.Value);
+            var scope = scopeOverride ?? (IsScopeCategories ? ScopeEnum.Categories : IsScopeProducts ? ScopeEnum.Products : ScopeEnum.AllProducts);
+            return new SaveDiscountProgramDto(_programId, Name, IsPercent ? DiscountEnum.Percent : DiscountEnum.Amount, value,
+                SelectedRounding?.Value ?? RoundingEnum.Down1000, IsStartNow ? StartModeEnum.Immediately : StartModeEnum.Scheduled,
+                startAtUtc, VietnamTime.ToUtc(end), scope,
+                [.. Categories.Where(c => c.IsSelected).Select(c => c.Id)], ScopeProducts.SelectedIds, ExcludedProducts.SelectedIds,
+                BaseUnitOnly ? UnitScopeEnum.BaseUnitOnly : UnitScopeEnum.AllUnits, Note);
         }
 
-        var scope = scopeOverride ?? (IsScopeCategories ? ScopeEnum.Categories : IsScopeProducts ? ScopeEnum.Products : ScopeEnum.AllProducts);
-        return new SaveDiscountProgramDto(_programId, Name, IsPercent ? DiscountEnum.Percent : DiscountEnum.Amount, value,
-            SelectedRounding?.Value ?? RoundingEnum.Down1000, SelectedTarget?.Id, scope,
-            [.. Categories.Where(c => c.IsSelected).Select(c => c.Id)], ScopeProducts.SelectedIds, ExcludedProducts.SelectedIds,
-            BaseUnitOnly ? UnitScopeEnum.BaseUnitOnly : UnitScopeEnum.AllUnits, Note);
+        if (reportErrors) ErrorMessage = error;
+        return null;
+    }
+
+    DateTime NowVietnam => VietnamTime.FromUtc(_timeProvider.GetUtcNow().UtcDateTime);
+
+    void SetEnd(DateTime local)
+    {
+        EndDate = local.Date;
+        EndTime = new TimeSpan(local.Hour, local.Minute, 0);
+    }
+
+    static DateTime? Combine(DateTime? date, TimeSpan? time) =>
+        date is { } d && time is { } t ? d.Date + new TimeSpan(t.Hours, t.Minutes, 0) : null;
+
+    static DateTime RoundUpToFiveMinutes(DateTime value)
+    {
+        var step = TimeSpan.FromMinutes(5).Ticks;
+        return new DateTime((value.Ticks + step - 1) / step * step, value.Kind);
     }
 
     bool TryParseValue(out decimal value)
