@@ -273,6 +273,23 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    async Task SaveAndApplyAsync(CancellationToken cancellationToken)
+    {
+        ErrorMessage = null;
+        if (BuildRequest() is not { } request || Preview is null) return;
+
+        IsBusy = true;
+        var result = await _programs.SaveAsync(request, cancellationToken);
+        IsBusy = false;
+        if (!result.IsSuccess)
+        {
+            ErrorMessage = result.Error;
+            return;
+        }
+        await _navigation.NavigateToAsync<DiscountProgramDetailViewModel>(new ProgramDetailRequest(result.Value, ApplyNow: true), cancellationToken);
+    }
+
+    [RelayCommand]
     void SetDuration(string days)
     {
         var start = IsStartNow ? NowVietnam : Combine(StartDate, StartTime) ?? NowVietnam;

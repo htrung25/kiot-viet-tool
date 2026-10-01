@@ -12,6 +12,8 @@ namespace KiotVietTool.Application.Services;
 internal sealed class DiscountProgramService(
     IDiscountProgramRepository programs,
     ICatalogRepository catalog,
+    IProgramPriceRepository prices,
+    ProgramScheduleService schedule,
     TimeProvider timeProvider,
     ILogger<DiscountProgramService> logger) : IDiscountProgramService
 {
@@ -39,6 +41,27 @@ internal sealed class DiscountProgramService(
         return Evaluate(request, context);
     }
 
+    public async Task<Result<DiscountPreviewDto>> PreviewSavedAsync(int programId, CancellationToken cancellationToken = default)
+    {
+        var context = await LoadContextAsync(cancellationToken);
+        var program = context.Programs.FirstOrDefault(p => p.Id == programId);
+        return program is null
+            ? Result.Failure<DiscountPreviewDto>("Không tìm thấy chương trình.")
+            : Result.Success(EvaluateProgram(program, context));
+    }
+
+    public async Task<DiscountProgramDetailDto?> GetDetailAsync(int programId, CancellationToken cancellationToken = default)
+    {
+        var p = await programs.GetAsync(programId, cancellationToken);
+        if (p is null) return null;
+        var items = await prices.GetAsync(programId, cancellationToken);
+        return new DiscountProgramDetailDto(p.Id, p.Name, p.Type, p.Value, p.Rounding, p.StartMode, p.StartAtUtc, p.EndAtUtc,
+            p.Scope, p.Scope == ScopeEnum.Categories ? p.CategoryIds.Count : p.ProductIds.Count, p.Note, p.Status,
+            p.IsOverdueAt(UtcNow), p.FinishedAtUtc,
+            [.. items.OrderBy(i => i.ProductCode, StringComparer.Ordinal).Select(i => new ProgramPriceDto(i.ProductId, i.ProductCode,
+                i.ProductName, i.OriginalPrice, i.DiscountedPrice, i.State, i.LastError, i.AppliedAtUtc, i.RestoredAtUtc))]);
+    }
+
     public async Task<Result<int>> SaveAsync(SaveDiscountProgramDto request, CancellationToken cancellationToken = default)
     {
         var context = await LoadContextAsync(cancellationToken);
@@ -64,6 +87,7 @@ internal sealed class DiscountProgramService(
                     request.EndAtUtc, request.Scope, request.CategoryIds, request.ProductIds, request.ExcludedProductIds,
                     request.UnitScope, request.Note, now);
                 await programs.UpdateAsync(existing, cancellationToken);
+                if (existing.Status == ProgramStatusEnum.Scheduled) await schedule.SyncAsync(existing, cancellationToken);
                 logger.LogInformation("Discount program {ProgramId} updated", existing.Id);
                 return Result.Success(existing.Id);
             }
@@ -108,6 +132,7 @@ internal sealed class DiscountProgramService(
         catch (DomainException ex) { return Result.Failure(ex.Message); }
 
         await programs.DeleteAsync(program, cancellationToken);
+        await schedule.RemoveAsync(id, cancellationToken);
         logger.LogInformation("Discount program {ProgramId} deleted", id);
         return Result.Success();
     }
@@ -147,7 +172,7 @@ internal sealed class DiscountProgramService(
         var selfId = programId ?? program.Id;
         var start = program.EffectiveStartAt(now);
         var conflicts = new Dictionary<long, string>();
-        foreach (var other in context.Programs.Where(p => p.Id != selfId && !p.IsFinished && !p.IsEndedAt(now)
+        foreach (var other in context.Programs.Where(p => p.Id != selfId && !p.IsDraft && !p.IsFinished && !p.IsEndedAt(now)
                      && p.OverlapsWith(start, program.EndAtUtc, now)))
             foreach (var product in ResolveScope(other, context).Where(x => other.Quote(x).IsApplied))
                 conflicts.TryAdd(product.Id, other.Name);

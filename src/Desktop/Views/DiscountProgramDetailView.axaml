@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.DiscountProgramDetailView"
+             x:DataType="vm:DiscountProgramDetailViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="16">
+        <DockPanel>
+            <Button DockPanel.Dock="Left" Classes="icon" Margin="0,0,12,0" VerticalAlignment="Center"
+                    ToolTip.Tip="Về danh sách" Command="{Binding BackCommand}">
+                <PathIcon Data="{StaticResource Icon.ArrowLeft}" />
+            </Button>
+            <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                <Button Classes="secondary" Content="Sửa" Margin="0,0,8,0" Command="{Binding EditCommand}"
+                        IsVisible="{Binding CanEdit}" />
+                <Button Classes="secondary" Content="Thử lại" Margin="0,0,8,0" Command="{Binding RetryCommand}"
+                        IsVisible="{Binding CanRetry}" />
+                <Button Classes="danger" Content="{Binding StopText}" Margin="0,0,8,0" Command="{Binding StopCommand}"
+                        IsVisible="{Binding CanStop}" />
+                <Button Classes="accent" Content="Áp dụng" Command="{Binding ApplyCommand}" IsVisible="{Binding CanApply}" />
+            </WrapPanel>
+            <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding Name}" Classes="h1" TextTrimming="CharacterEllipsis" />
+                    <Border Classes="badge" Classes.success="{Binding IsStatusGood}" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding StatusText}" />
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="{Binding CountsText}" Classes="subtitle" />
+            </StackPanel>
+        </DockPanel>
+
+        <Border Grid.Row="1" Classes="card" Padding="20,14">
+            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="8">
+                <TextBlock Text="Mức giảm" Classes="caption" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding ValueText}" FontWeight="Medium" />
+                <TextBlock Grid.Column="2" Text="Phạm vi" Classes="caption" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding ScopeText}" FontWeight="Medium" />
+                <TextBlock Grid.Row="1" Text="Bắt đầu" Classes="caption" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding StartText}" FontWeight="Medium" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Kết thúc" Classes="caption" VerticalAlignment="Center" />
+                <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding EndText}" FontWeight="Medium" />
+                <TextBlock Grid.Row="2" Text="Đổi kết thúc" Classes="caption" VerticalAlignment="Center"
+                           IsVisible="{Binding CanChangeEnd}" />
+                <WrapPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" IsVisible="{Binding CanChangeEnd}">
+                    <CalendarDatePicker SelectedDate="{Binding NewEndDate}" Width="150" Margin="0,0,8,0"
+                                        SelectedDateFormat="Custom" CustomDateFormatString="dd/MM/yyyy" />
+                    <TimePicker SelectedTime="{Binding NewEndTime}" ClockIdentifier="24HourClock" Margin="0,0,8,0" />
+                    <Button Classes="secondary" Content="Đổi giờ kết thúc" Command="{Binding ChangeEndCommand}" />
+                </WrapPanel>
+                <TextBlock Grid.Row="3" Text="Ghi chú" Classes="caption" IsVisible="{Binding HasNote}" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Note}" TextWrapping="Wrap"
+                           IsVisible="{Binding HasNote}" />
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="2" Spacing="8">
+            <Border Classes="alert error"
+                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <DockPanel>
+                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                    <TextBlock Text="{Binding ErrorMessage}" />
+                </DockPanel>
+            </Border>
+            <Border Classes="alert error" IsVisible="{Binding IsOverdue}">
+                <DockPanel>
+                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                    <TextBlock Text="Chương trình đã quá giờ kết thúc nhưng giá giảm vẫn đang ở trên KiotViet. Tool đang tự trả giá gốc; nếu vẫn báo lỗi, bấm Thử lại." />
+                </DockPanel>
+            </Border>
+            <Border Classes="alert warning" IsVisible="{Binding HasManualChanges}">
+                <DockPanel>
+                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <Button Classes="secondary" Content="Giữ giá hiện tại" Command="{Binding KeepManualChangesCommand}"
+                                IsEnabled="{Binding IsIdle}" />
+                        <Button Classes="secondary" Content="Trả về giá gốc" Command="{Binding RestoreManualChangesCommand}"
+                                IsEnabled="{Binding IsIdle}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ManualChangesText}" />
+                </DockPanel>
+            </Border>
+            <DockPanel IsVisible="{Binding IsBusy}">
+                <Button DockPanel.Dock="Right" Classes="secondary" Content="Huỷ" Margin="12,0,0,0" VerticalAlignment="Center"
+                        Command="{Binding CancelOperationCommand}"
+                        ToolTip.Tip="Dừng sau đợt đang ghi; phần đã ghi giữ nguyên, bấm Thử lại để làm tiếp" />
+                <StackPanel Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ProgressText}" Classes="caption" />
+                    <ProgressBar Value="{Binding ProgressValue}" Maximum="100" Height="6" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+
+        <Border Grid.Row="3" Classes="card">
+            <Panel>
+                <DataGrid ItemsSource="{Binding Prices}" IsVisible="{Binding HasPrices}"
+                          AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="MÃ HÀNG" Width="100">
+                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                                <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="TÊN HÀNG" Width="3*" MinWidth="150">
+                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                                <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="GIÁ GỐC" Width="105">
+                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                                <TextBlock Text="{Binding OriginalPriceText}" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="GIÁ GIẢM" Width="105">
+                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                                <TextBlock Text="{Binding DiscountedPriceText}" FontWeight="SemiBold"
+                                           Foreground="{StaticResource Primary}" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="TRẠNG THÁI" Width="2*" MinWidth="150">
+                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                                <StackPanel VerticalAlignment="Center" Spacing="1">
+                                    <Border Classes="badge" Classes.success="{Binding IsGood}">
+                                        <TextBlock Text="{Binding StateText}" />
+                                    </Border>
+                                    <TextBlock Text="{Binding ErrorText}" Classes="caption" TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding ErrorText}" IsVisible="{Binding HasError}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel IsVisible="{Binding ShowNotAppliedHint}" VerticalAlignment="Center"
+                            HorizontalAlignment="Center" Spacing="10" Margin="24,40" MaxWidth="420">
+                    <Border Classes="emptyIcon">
+                        <PathIcon Data="{StaticResource Icon.Tag}" />
+                    </Border>
+                    <TextBlock Text="Chưa đổi giá trên KiotViet" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                    <TextBlock Text="Bấm Áp dụng để đổi giá bán (hoặc lên lịch nếu chương trình hẹn giờ). Danh sách sản phẩm và giá gốc hiện ở đây sau khi áp giá."
+                               Classes="subtitle" TextAlignment="Center" />
+                </StackPanel>
+            </Panel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -10,6 +10,7 @@ namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class DiscountProgramListViewModel(
     IDiscountProgramService programs,
+    IPriceDeploymentService deployment,
     INavigationService navigation,
     IDialogService dialogs,
     INotificationService notifications) : ViewModelBase
@@ -38,8 +39,27 @@ public sealed partial class DiscountProgramListViewModel(
     public override async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
         SelectedStatus = StatusOptions[0];
+        deployment.Changed += OnDeploymentChanged;
         await ReloadAsync(cancellationToken);
     }
+
+    async void OnDeploymentChanged(object? sender, EventArgs e)
+    {
+        if (navigation.CurrentViewModel != this)
+        {
+            deployment.Changed -= OnDeploymentChanged;
+            return;
+        }
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ReloadAsync(CancellationToken.None));
+    }
+
+    [RelayCommand]
+    Task OpenAsync(DiscountProgramItem item) =>
+        navigation.NavigateToAsync<DiscountProgramDetailViewModel>(new ProgramDetailRequest(item.Id));
+
+    partial void OnSelectedStatusChanged(FilterOption<ProgramStatusEnum?>? value) => ApplyFilter();
+
+    async partial void OnIncludeLongEndedChanged(bool value) => await ReloadAsync(CancellationToken.None);
 
     [RelayCommand]
     Task CreateAsync(CancellationToken cancellationToken) =>

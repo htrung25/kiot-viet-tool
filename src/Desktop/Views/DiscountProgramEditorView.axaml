@@ -12,7 +12,7 @@
             </Button>
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Title}" Classes="h1" />
-                <TextBlock Text="Chương trình được lưu dạng nháp, chưa ảnh hưởng tới KiotViet." Classes="subtitle" />
+                <TextBlock Text="Lưu nháp chưa ảnh hưởng tới KiotViet; Lưu và áp dụng sẽ đổi giá bán trên KiotViet sau khi bạn xác nhận." Classes="subtitle" />
             </StackPanel>
         </DockPanel>
 
@@ -283,7 +283,9 @@
                         IsVisible="{Binding CanGoBack}" IsEnabled="{Binding IsIdle}" />
                 <Button Classes="accent" Content="Tiếp tục" Command="{Binding NextCommand}"
                         IsVisible="{Binding IsNotLastStep}" IsEnabled="{Binding IsIdle}" />
-                <Button Classes="accent" Content="Lưu nháp" Command="{Binding SaveCommand}"
+                <Button Classes="secondary" Content="Lưu nháp" Command="{Binding SaveCommand}"
+                        IsVisible="{Binding IsLastStep}" IsEnabled="{Binding IsIdle}" />
+                <Button Classes="accent" Content="Lưu và áp dụng" Command="{Binding SaveAndApplyCommand}"
                         IsVisible="{Binding IsLastStep}" IsEnabled="{Binding IsIdle}" />
             </StackPanel>
             <Panel />

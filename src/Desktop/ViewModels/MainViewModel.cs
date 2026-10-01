@@ -49,7 +49,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
     public bool IsConnectionActive => Navigation.CurrentViewModel is KiotVietConnectionViewModel;
-    public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel;
+    public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel
+        or DiscountProgramDetailViewModel;
 
     void OnNavigationChanged(object? sender, PropertyChangedEventArgs e)
     {

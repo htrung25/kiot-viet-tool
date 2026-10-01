@@ -6,10 +6,12 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 
 using KiotVietTool.Application;
+using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Desktop.Services;
 using KiotVietTool.Desktop.Models;
 using KiotVietTool.Desktop.ViewModels;
 using KiotVietTool.Desktop.Views;
+using KiotVietTool.Domain.Enums;
 using KiotVietTool.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +47,7 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
             desktop.MainWindow = window;
             desktop.Exit += OnExit;
 
-            singleInstance?.ListenForActivation(() => Dispatcher.UIThread.Post(BringMainWindowToFront));
+            singleInstance?.ListenForActivation(message => Dispatcher.UIThread.Post(() => OnInstanceMessage(message)));
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -60,6 +62,7 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
             await _host.StartAsync();
             await services.InitializeDatabaseAsync();
             services.GetRequiredService<IdleLockService>().Attach((Window)sender!);
+            services.GetRequiredService<DueJobsService>().Start();
             await services.GetRequiredService<INavigationService>().NavigateToAsync<LoginViewModel>();
             Log.Information("Application started, version {Version}", typeof(App).Assembly.GetName().Version);
         }
@@ -77,6 +80,43 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
         Log.Information("Application exiting with code {ExitCode}", e.ApplicationExitCode);
         _host?.Dispose();
         Log.CloseAndFlush();
+    }
+
+    public static async Task<int> RunScheduledJobsAsync(string[] args)
+    {
+        using var host = CreateHost(args);
+        try
+        {
+            await host.StartAsync();
+            await host.Services.InitializeDatabaseAsync();
+            var handled = await host.Services.GetRequiredService<IPriceDeploymentService>().RunDueAsync();
+            var programs = await host.Services.GetRequiredService<IDiscountProgramService>().GetListAsync(includeLongEnded: false);
+            var unfinished = programs.Count(p => p.IsOverdue || p.Status is ProgramStatusEnum.Applying or ProgramStatusEnum.Restoring
+                or ProgramStatusEnum.RestoreFailed);
+            Log.Information("Scheduled run finished: {Handled} programs handled, {Unfinished} still need attention", handled, unfinished);
+            await host.StopAsync();
+            return unfinished == 0 ? 0 : 1;
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Scheduled run failed");
+            return 1;
+        }
+        finally
+        {
+            await Log.CloseAndFlushAsync();
+        }
+    }
+
+    void OnInstanceMessage(string message)
+    {
+        if (message == SingleInstanceService.RunDueMessage && _host?.Services.GetService<DueJobsService>() is { } dueJobs)
+        {
+            Log.Information("Scheduled task signalled the running instance to run due price jobs");
+            dueJobs.RunNow();
+            return;
+        }
+        BringMainWindowToFront();
     }
 
     static IHost CreateHost(string[] args) =>
@@ -109,6 +149,8 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
                 services.AddTransient<KiotVietConnectionViewModel>();
                 services.AddTransient<DiscountProgramListViewModel>();
                 services.AddTransient<DiscountProgramEditorViewModel>();
+                services.AddTransient<DiscountProgramDetailViewModel>();
+                services.AddSingleton<DueJobsService>();
             })
             .Build();
 

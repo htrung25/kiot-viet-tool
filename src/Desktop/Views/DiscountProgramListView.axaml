@@ -63,9 +63,14 @@
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Width="120">
+                            <DataGridTemplateColumn Width="156">
                                 <DataTemplate x:DataType="models:DiscountProgramItem">
                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" Margin="0,0,4,0">
+                                        <Button Classes="icon" ToolTip.Tip="Chi tiết, áp dụng, dừng"
+                                                Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).OpenCommand}"
+                                                CommandParameter="{Binding}">
+                                            <PathIcon Data="{StaticResource Icon.ChevronRight}" />
+                                        </Button>
                                         <Button Classes="icon" ToolTip.Tip="Sửa" IsVisible="{Binding IsEditable}"
                                                 Command="{Binding $parent[UserControl].((vm:DiscountProgramListViewModel)DataContext).EditCommand}"
                                                 CommandParameter="{Binding}">

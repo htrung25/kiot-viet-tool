@@ -16,6 +16,7 @@ public sealed partial class IdleLockService : ObservableObject
 {
     readonly IUserSessionService _session;
     readonly ICatalogSyncService _sync;
+    readonly IPriceDeploymentService _deployment;
     readonly TimeProvider _timeProvider;
     readonly ILogger<IdleLockService> _logger;
     readonly TimeSpan _lockAfter;
@@ -23,10 +24,11 @@ public sealed partial class IdleLockService : ObservableObject
     DateTimeOffset _lastActivity;
 
     public IdleLockService(IOptions<AuthOptions> options, IUserSessionService session, ICatalogSyncService sync,
-        TimeProvider timeProvider, ILogger<IdleLockService> logger)
+        IPriceDeploymentService deployment, TimeProvider timeProvider, ILogger<IdleLockService> logger)
     {
         _session = session;
         _sync = sync;
+        _deployment = deployment;
         _timeProvider = timeProvider;
         _logger = logger;
         _lockAfter = TimeSpan.FromMinutes(options.Value.IdleLockMinutes);
@@ -75,7 +77,7 @@ public sealed partial class IdleLockService : ObservableObject
             SecondsUntilLock = null;
             return;
         }
-        if (_sync.IsRunning)
+        if (_sync.IsRunning || _deployment.IsRunning)
         {
             RegisterActivity();
             return;

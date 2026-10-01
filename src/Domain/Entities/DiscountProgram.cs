@@ -26,6 +26,8 @@ public sealed class DiscountProgram
     public UnitScopeEnum UnitScope { get; private set; }
     public string? Note { get; private set; }
     public ProgramStatusEnum Status { get; private set; }
+    public bool IsStopRequested { get; private set; }
+    public DateTime? FinishedAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
 
@@ -115,6 +117,84 @@ public sealed class DiscountProgram
 
     public bool OverlapsWith(DateTime startUtc, DateTime endUtc, DateTime nowUtc) =>
         EffectiveStartAt(nowUtc) < endUtc && startUtc < EndAtUtc;
+
+    public bool IsStartDueAt(DateTime nowUtc) => Status == ProgramStatusEnum.Scheduled && StartAtUtc <= nowUtc;
+
+    public void Schedule(DateTime nowUtc)
+    {
+        if (Status != ProgramStatusEnum.Draft) throw new DomainException("Chỉ lên lịch được chương trình nháp.");
+        if (StartMode != StartModeEnum.Scheduled || StartAtUtc is not { } start || start <= nowUtc)
+            throw new DomainException("Chương trình không có giờ bắt đầu trong tương lai để lên lịch.");
+        Status = ProgramStatusEnum.Scheduled;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void Unschedule(DateTime nowUtc)
+    {
+        if (Status != ProgramStatusEnum.Scheduled) throw new DomainException("Chương trình không ở trạng thái đã lên lịch.");
+        Status = ProgramStatusEnum.Draft;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void BeginApplying(DateTime nowUtc)
+    {
+        if (Status is not (ProgramStatusEnum.Draft or ProgramStatusEnum.Scheduled or ProgramStatusEnum.Applying or ProgramStatusEnum.ApplyFailed))
+            throw new DomainException("Chương trình không ở trạng thái có thể áp giá.");
+        if (IsEndedAt(nowUtc)) throw new DomainException("Chương trình đã quá thời điểm kết thúc, không áp giá nữa.");
+        if (StartAtUtc is { } start && start > nowUtc) throw new DomainException("Chưa tới giờ bắt đầu chương trình.");
+        StartAtUtc ??= TruncateToMinute(nowUtc);
+        Status = ProgramStatusEnum.Applying;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void FinishApplying(bool allSucceeded, DateTime nowUtc)
+    {
+        if (Status != ProgramStatusEnum.Applying) throw new DomainException("Chương trình không ở trạng thái đang áp giá.");
+        Status = allSucceeded ? ProgramStatusEnum.Running : ProgramStatusEnum.ApplyFailed;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void BeginRestoring(bool stopEarly, DateTime nowUtc)
+    {
+        if (!HoldsKiotVietPrices) throw new DomainException("Chương trình không giữ giá giảm nào trên KiotViet.");
+        if (stopEarly) IsStopRequested = true;
+        Status = ProgramStatusEnum.Restoring;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void FinishRestoring(bool allSucceeded, DateTime nowUtc)
+    {
+        if (Status != ProgramStatusEnum.Restoring) throw new DomainException("Chương trình không ở trạng thái đang trả giá.");
+        UpdatedAtUtc = nowUtc;
+        if (!allSucceeded)
+        {
+            Status = ProgramStatusEnum.RestoreFailed;
+            return;
+        }
+        Status = IsStopRequested ? ProgramStatusEnum.Stopped : ProgramStatusEnum.Ended;
+        FinishedAtUtc = nowUtc;
+    }
+
+    public void EndWithoutApplying(DateTime nowUtc)
+    {
+        if (Status != ProgramStatusEnum.Scheduled) throw new DomainException("Chương trình không ở trạng thái đã lên lịch.");
+        Status = ProgramStatusEnum.Ended;
+        FinishedAtUtc = nowUtc;
+        UpdatedAtUtc = nowUtc;
+    }
+
+    public void ChangeEnd(DateTime endAtUtc, DateTime nowUtc)
+    {
+        if (Status is not (ProgramStatusEnum.Scheduled or ProgramStatusEnum.Running or ProgramStatusEnum.ApplyFailed))
+            throw new DomainException("Chỉ đổi được thời điểm kết thúc khi chương trình đã lên lịch hoặc đang chạy.");
+        endAtUtc = TruncateToMinute(endAtUtc);
+        var start = EffectiveStartAt(nowUtc);
+        if (endAtUtc <= nowUtc || endAtUtc - start < MinDuration)
+            throw new DomainException("Thời điểm kết thúc phải ở tương lai và sau thời điểm bắt đầu ít nhất 5 phút.");
+        if (endAtUtc - start > MaxDuration) throw new DomainException("Chương trình kéo dài tối đa 366 ngày.");
+        EndAtUtc = endAtUtc;
+        UpdatedAtUtc = nowUtc;
+    }
 
     public void EnsureCanDelete()
     {

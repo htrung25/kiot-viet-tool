@@ -11,4 +11,7 @@ public sealed record ProductDto(
     ProductEnum Type,
     decimal BasePrice,
     bool IsActive,
-    bool AllowsSale);
+    bool AllowsSale,
+    string? DiscountProgramName = null,
+    decimal? OriginalPrice = null,
+    decimal? DiscountedPrice = null);

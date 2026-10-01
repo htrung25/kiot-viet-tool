@@ -35,7 +35,8 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(KiotVietOptions.SectionName))
             .Validate(o => Uri.TryCreate(o.TokenUrl, UriKind.Absolute, out _) && Uri.TryCreate(o.ApiBaseUrl, UriKind.Absolute, out _),
                 $"{KiotVietOptions.SectionName}:TokenUrl and ApiBaseUrl must be absolute URLs.")
-            .Validate(o => o.RequestTimeoutSeconds > 0 && o.MaxGetRequestsPerHour > 0 && o.MaxRetries >= 0,
+            .Validate(o => o.RequestTimeoutSeconds > 0 && o.MaxGetRequestsPerHour > 0 && o.MaxRetries >= 0
+                && o.PriceUpdateBatchSize is >= 1 and <= 100 && o.MinWriteIntervalMs >= 0,
                 $"{KiotVietOptions.SectionName}: timeout, rate limit and retries must be positive.")
             .ValidateOnStart();
 
@@ -52,6 +53,9 @@ public static class DependencyInjection
         services.AddTransient<IKiotVietConnectionRepository, KiotVietConnectionRepository>();
         services.AddTransient<ICatalogRepository, CatalogRepository>();
         services.AddTransient<IDiscountProgramRepository, DiscountProgramRepository>();
+        services.AddTransient<IProgramPriceRepository, ProgramPriceRepository>();
+        services.AddTransient<IDatabaseBackupService, SqliteBackupService>();
+        services.AddSingleton<ITaskSchedulerService, WindowsTaskSchedulerService>();
         services.AddTransient<DatabaseInitializer>();
         return services;
     }

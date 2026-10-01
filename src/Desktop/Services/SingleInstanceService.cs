@@ -20,7 +20,10 @@ public sealed class SingleInstanceService : IDisposable
     }
 
     /// <summary>Returns null if another instance is running (after signalling it to activate).</summary>
-    public static SingleInstanceService? TryAcquire(string id)
+    public const string ActivateMessage = "activate";
+    public const string RunDueMessage = "run-due";
+
+    public static SingleInstanceService? TryAcquire(string id, string message = ActivateMessage)
     {
         var name = $"{id}.{Environment.UserName}";
         // Windows "Local\" = per logon session. On Unix "Local\" is per process session (each launch differs),
@@ -30,11 +33,11 @@ public sealed class SingleInstanceService : IDisposable
         if (createdNew) return new SingleInstanceService(mutex, name);
 
         mutex.Dispose();
-        SignalRunningInstance(name);
+        SignalRunningInstance(name, message);
         return null;
     }
 
-    static void SignalRunningInstance(string pipeName)
+    static void SignalRunningInstance(string pipeName, string message)
     {
         // Let the running instance take foreground focus (Windows blocks it otherwise).
         if (OperatingSystem.IsWindows()) AllowSetForegroundWindow(AsfwAny);
@@ -42,6 +45,8 @@ public sealed class SingleInstanceService : IDisposable
         {
             using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(TimeSpan.FromSeconds(2));
+            using var writer = new StreamWriter(client);
+            writer.WriteLine(message);
         }
         catch (Exception e) when (e is TimeoutException or IOException)
         {
@@ -49,10 +54,10 @@ public sealed class SingleInstanceService : IDisposable
         }
     }
 
-    /// <summary>Invokes <paramref name="onActivate"/> (on a background thread) each time another launch is attempted.</summary>
-    public void ListenForActivation(Action onActivate) => _ = ListenAsync(onActivate, _cts.Token);
+    /// <summary>Invokes <paramref name="onMessage"/> (on a background thread) each time another launch is attempted.</summary>
+    public void ListenForActivation(Action<string> onMessage) => _ = ListenAsync(onMessage, _cts.Token);
 
-    async Task ListenAsync(Action onActivate, CancellationToken cancellationToken)
+    async Task ListenAsync(Action<string> onMessage, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -61,7 +66,9 @@ public sealed class SingleInstanceService : IDisposable
                 await using var server = new NamedPipeServerStream(_pipeName, PipeDirection.In, 1,
                     PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                 await server.WaitForConnectionAsync(cancellationToken);
-                onActivate();
+                using var reader = new StreamReader(server);
+                var message = await reader.ReadLineAsync(cancellationToken);
+                onMessage(string.IsNullOrWhiteSpace(message) ? ActivateMessage : message.Trim());
             }
             catch (OperationCanceledException) { return; }
             catch (IOException) { return; } // pipe unavailable: app still works, only re-activation is lost

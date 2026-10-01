@@ -15,7 +15,8 @@ public sealed record ProductItem(
     decimal? DiscountedPrice = null)
 {
     public static ProductItem From(ProductDto product) =>
-        new(product.Code, product.FullName, product.CategoryName, product.Unit, product.Type, product.BasePrice, product.IsActive);
+        new(product.Code, product.FullName, product.CategoryName, product.Unit, product.Type,
+            product.OriginalPrice ?? product.BasePrice, product.IsActive, product.DiscountProgramName, product.DiscountedPrice);
 
     public string KindText => Type switch
     {
