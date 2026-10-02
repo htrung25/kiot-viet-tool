@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kiot-viet-tool",
+  "main": "relay/telegram-relay.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "keep_vars": true,
+  "observability": { "enabled": false }
+}

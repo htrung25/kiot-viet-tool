@@ -484,3 +484,7 @@ $RECYCLE.BIN/
 *.swp
 
 .claude/
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
