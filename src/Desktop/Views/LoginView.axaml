@@ -29,8 +29,8 @@
         <Border Grid.Column="1" Background="{StaticResource Bg.Surface}">
             <StackPanel Width="360" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Đăng nhập" Classes="h1" />
-                    <TextBlock Text="Nhập tài khoản quản trị để tiếp tục." Classes="subtitle" />
+                    <TextBlock Text="{Binding Title}" Classes="h1" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="subtitle" />
                 </StackPanel>
 
                 <Border Classes="alert error"
@@ -41,23 +41,72 @@
                     </DockPanel>
                 </Border>
 
-                <StackPanel Classes="field">
-                    <TextBlock Text="Tên đăng nhập" Classes="label" />
-                    <TextBox x:Name="UsernameBox" Text="{Binding Username}" PlaceholderText="Nhập tên đăng nhập" />
-                </StackPanel>
-                <StackPanel Classes="field">
-                    <TextBlock Text="Mật khẩu" Classes="label" />
-                    <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton"
-                             PlaceholderText="Nhập mật khẩu" />
+                <StackPanel Spacing="20" IsVisible="{Binding IsPasswordStep}">
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Tên đăng nhập" Classes="label" />
+                        <TextBox x:Name="UsernameBox" Text="{Binding Username}" PlaceholderText="Nhập tên đăng nhập" />
+                    </StackPanel>
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Mật khẩu" Classes="label" />
+                        <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton"
+                                 PlaceholderText="Nhập mật khẩu" />
+                    </StackPanel>
+
+                    <Button Classes="accent" Command="{Binding SignInCommand}" IsDefault="{Binding IsPasswordStep}"
+                            HorizontalAlignment="Stretch" MinHeight="40" Margin="0,4,0,0">
+                        <Panel>
+                            <TextBlock Text="Đăng nhập" IsVisible="{Binding !SignInCommand.IsRunning}" />
+                            <TextBlock Text="Đang đăng nhập…" IsVisible="{Binding SignInCommand.IsRunning}" />
+                        </Panel>
+                    </Button>
                 </StackPanel>
 
-                <Button Classes="accent" Command="{Binding SignInCommand}" IsDefault="True"
-                        HorizontalAlignment="Stretch" MinHeight="40" Margin="0,4,0,0">
-                    <Panel>
-                        <TextBlock Text="Đăng nhập" IsVisible="{Binding !SignInCommand.IsRunning}" />
-                        <TextBlock Text="Đang đăng nhập…" IsVisible="{Binding SignInCommand.IsRunning}" />
-                    </Panel>
-                </Button>
+                <StackPanel Spacing="16" IsVisible="{Binding IsOtpStep}">
+                    <Border Classes="alert warning"
+                            IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.Send}" />
+                            <TextBlock Text="{Binding Notice}" />
+                        </DockPanel>
+                    </Border>
+
+                    <StackPanel Classes="field" IsVisible="{Binding !UseRecoveryCode}">
+                        <TextBlock Text="Mã 6 số" Classes="label" />
+                        <TextBox x:Name="OtpBox" Text="{Binding OtpCode}" MaxLength="6" FontSize="20" LetterSpacing="6"
+                                 HorizontalContentAlignment="Center" PlaceholderText="••••••" />
+                    </StackPanel>
+                    <StackPanel Classes="field" IsVisible="{Binding UseRecoveryCode}">
+                        <TextBlock Text="Mã dự phòng" Classes="label" />
+                        <TextBox Text="{Binding RecoveryCode}" MaxLength="24" PlaceholderText="XXXX-XXXX-XXXX-XXXX" />
+                    </StackPanel>
+
+                    <Button Classes="accent" Command="{Binding VerifyCommand}" IsDefault="{Binding IsOtpStep}"
+                            HorizontalAlignment="Stretch" MinHeight="40">
+                        <Panel>
+                            <TextBlock Text="Xác nhận" IsVisible="{Binding !VerifyCommand.IsRunning}" />
+                            <TextBlock Text="Đang kiểm tra…" IsVisible="{Binding VerifyCommand.IsRunning}" />
+                        </Panel>
+                    </Button>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Classes="secondary" HorizontalAlignment="Stretch" Command="{Binding ResendCommand}"
+                                IsVisible="{Binding !UseRecoveryCode}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource Icon.Send}" />
+                                <TextBlock Text="Gửi lại mã" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Classes="secondary" HorizontalAlignment="Stretch"
+                                Command="{Binding ToggleRecoveryCodeCommand}">
+                            <Panel>
+                                <TextBlock Text="Dùng mã dự phòng" IsVisible="{Binding !UseRecoveryCode}" />
+                                <TextBlock Text="Dùng mã Telegram" IsVisible="{Binding UseRecoveryCode}" />
+                            </Panel>
+                        </Button>
+                    </Grid>
+                    <Button Classes="ghost" Content="Quay lại đăng nhập" HorizontalAlignment="Center"
+                            Command="{Binding BackToPasswordCommand}" />
+                </StackPanel>
             </StackPanel>
         </Border>
     </Grid>

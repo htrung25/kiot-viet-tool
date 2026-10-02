@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.TelegramSettingsView"
+             x:DataType="vm:TelegramSettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page" Spacing="20" MaxWidth="760" HorizontalAlignment="Left">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Telegram" Classes="h1" />
+                <TextBlock Text="Bot Telegram nhận mã đăng nhập và (sắp có) thông báo về chương trình giảm giá."
+                           Classes="subtitle" />
+            </StackPanel>
+
+            <Border Classes="card">
+                <StackPanel Margin="24,20" Spacing="16">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Classes="secondary" VerticalAlignment="Center"
+                                Command="{Binding ReconnectCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource Icon.Send}" />
+                                <TextBlock Text="Kết nối lại" />
+                            </StackPanel>
+                        </Button>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Mã đăng nhập" Classes="h2" FontSize="16" />
+                            <TextBlock Text="Mỗi lần đăng nhập, bot gửi mã 6 số tới tài khoản Telegram dưới đây." Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" IsVisible="{Binding IsConnected}">
+                        <Border Classes="stat">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Bot" Classes="caption" />
+                                <TextBlock Text="{Binding BotLink}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Classes="stat">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Gửi tới" Classes="caption" />
+                                <TextBlock Text="{Binding Status.ChatTitle, FallbackValue=''}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="stat">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Mã dự phòng còn lại" Classes="caption" />
+                                <TextBlock Text="{Binding RecoveryCodesText}" FontWeight="SemiBold" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <TextBlock IsVisible="{Binding IsConnected}" Classes="caption"
+                               Text="{Binding ConnectedAtText, StringFormat='Kết nối lúc {0}'}" />
+
+                    <Border Classes="alert warning" IsVisible="{Binding IsRecoveryLow}">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                            <TextBlock Text="Sắp hết mã dự phòng. Bấm Kết nối lại để tạo bộ mã mới." />
+                        </DockPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel Margin="24,20" Spacing="16">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Thông báo chương trình" Classes="h2" FontSize="16" />
+                        <TextBlock Text="Bản xem trước: tool chưa gửi các thông báo này." Classes="caption" />
+                    </StackPanel>
+                    <StackPanel Spacing="10" IsEnabled="False">
+                        <ItemsControl ItemsSource="{Binding Events}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:NotificationEventChoice">
+                                    <CheckBox IsChecked="{Binding IsSelected}">
+                                        <StackPanel Spacing="1">
+                                            <TextBlock Text="{Binding Title}" />
+                                            <TextBlock Text="{Binding Description}" Classes="caption" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

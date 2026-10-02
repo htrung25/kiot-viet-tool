@@ -41,14 +41,16 @@ public sealed partial class MainViewModel : ObservableObject
     public IdleLockService IdleLock { get; }
     public LockScreenViewModel? LockScreen => IdleLock.IsLocked ? _lockScreen : null;
 
-    /// <summary>Sidebar is hidden on Login and on the forced first-login password change (full-screen flows).</summary>
-    public bool ShowChrome => _session.CurrentUser is { MustChangePassword: false };
+    /// <summary>Sidebar is hidden on Login, the forced first-login password change and the mandatory Telegram setup (full-screen flows).</summary>
+    public bool ShowChrome => _session.CurrentUser is { MustChangePassword: false, NeedsTelegram: false }
+        && Navigation.CurrentViewModel is not TelegramSetupViewModel { IsMandatory: true };
 
     public string? Username => _session.CurrentUser?.Username;
     public string UserInitial => Username is { Length: > 0 } name ? name[..1].ToUpperInvariant() : "";
 
     public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
     public bool IsConnectionActive => Navigation.CurrentViewModel is KiotVietConnectionViewModel;
+    public bool IsTelegramActive => Navigation.CurrentViewModel is TelegramSettingsViewModel or TelegramSetupViewModel;
     public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel
         or DiscountProgramDetailViewModel;
 
@@ -56,8 +58,10 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (e.PropertyName == nameof(INavigationService.CurrentViewModel))
         {
+            OnPropertyChanged(nameof(ShowChrome));
             OnPropertyChanged(nameof(IsProductsActive));
             OnPropertyChanged(nameof(IsConnectionActive));
+            OnPropertyChanged(nameof(IsTelegramActive));
             OnPropertyChanged(nameof(IsProgramsActive));
         }
     }
@@ -73,6 +77,10 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     Task OpenConnectionAsync(CancellationToken cancellationToken) =>
         Navigation.NavigateToAsync<KiotVietConnectionViewModel>(null, cancellationToken);
+
+    [RelayCommand]
+    Task OpenTelegramAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<TelegramSettingsViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task ChangePasswordAsync(CancellationToken cancellationToken) =>

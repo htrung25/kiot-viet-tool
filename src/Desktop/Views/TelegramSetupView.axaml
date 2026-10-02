@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             x:Class="KiotVietTool.Desktop.Views.TelegramSetupView"
+             x:DataType="vm:TelegramSetupViewModel">
+    <ScrollViewer>
+        <Border Classes="card" Width="560" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+            <StackPanel Margin="32,28" Spacing="18">
+                <StackPanel Spacing="12">
+                    <Border Classes="emptyIcon" HorizontalAlignment="Left" Width="44" Height="44" CornerRadius="10">
+                        <PathIcon Data="{StaticResource Icon.Send}" Width="22" Height="22" />
+                    </Border>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Title}" Classes="h1" FontSize="22" />
+                        <TextBlock Text="{Binding Subtitle}" Classes="subtitle" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="stepNumber" Classes.active="{Binding IsStep1}"><TextBlock Text="1" /></Border>
+                    <TextBlock Text="Bot" Classes="stepLabel" Classes.active="{Binding IsStep1}" />
+                    <Border Classes="divider" Width="24" VerticalAlignment="Center" />
+                    <Border Classes="stepNumber" Classes.active="{Binding IsStep2}"><TextBlock Text="2" /></Border>
+                    <TextBlock Text="Bắt đầu chat" Classes="stepLabel" Classes.active="{Binding IsStep2}" />
+                    <Border Classes="divider" Width="24" VerticalAlignment="Center" />
+                    <Border Classes="stepNumber" Classes.active="{Binding IsStep3}"><TextBlock Text="3" /></Border>
+                    <TextBlock Text="Xác nhận" Classes="stepLabel" Classes.active="{Binding IsStep3}" />
+                    <Border Classes="divider" Width="24" VerticalAlignment="Center" />
+                    <Border Classes="stepNumber" Classes.active="{Binding IsStep4}"><TextBlock Text="4" /></Border>
+                    <TextBlock Text="Mã dự phòng" Classes="stepLabel" Classes.active="{Binding IsStep4}" />
+                </StackPanel>
+
+                <Border Classes="alert error"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <DockPanel>
+                        <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                        <TextBlock Text="{Binding ErrorMessage}" />
+                    </DockPanel>
+                </Border>
+
+                <StackPanel Spacing="14" IsVisible="{Binding IsStep1}">
+                    <StackPanel Spacing="4">
+                        <TextBlock TextWrapping="Wrap" Text="1. Trong Telegram, mở @BotFather, gõ /newbot và đặt tên cho bot." />
+                        <TextBlock TextWrapping="Wrap" Text="2. BotFather gửi lại một Bot Token. Dán token đó vào ô dưới." />
+                    </StackPanel>
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Bot Token" Classes="label" />
+                        <TextBox Text="{Binding BotToken}" PasswordChar="•" Classes="revealPasswordButton"
+                                 PlaceholderText="123456789:AAH…" />
+                        <TextBlock Text="Được mã hoá khi lưu và không hiển thị lại." Classes="caption" />
+                    </StackPanel>
+                    <Button Classes="accent" HorizontalAlignment="Stretch" MinHeight="40" Content="Kiểm tra bot"
+                            Command="{Binding VerifyBotCommand}" IsEnabled="{Binding IsIdle}" IsDefault="{Binding IsStep1}" />
+                </StackPanel>
+
+                <StackPanel Spacing="14" IsVisible="{Binding IsStep2}">
+                    <Border Classes="stat">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="caption" Text="Bot hợp lệ" />
+                            <SelectableTextBlock Text="{Binding BotLink}" FontWeight="SemiBold" Foreground="{StaticResource Primary}" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock TextWrapping="Wrap"
+                               Text="Trên điện thoại hoặc máy tính, mở Telegram, tìm bot ở trên (hoặc mở đường dẫn t.me), bấm Bắt đầu (Start). Sau đó bấm nút dưới đây để tool tìm cuộc trò chuyện của bạn." />
+                    <Button Classes="accent" HorizontalAlignment="Stretch" MinHeight="40" Content="Tôi đã bấm Bắt đầu"
+                            Command="{Binding DetectChatCommand}" IsEnabled="{Binding IsIdle}" IsDefault="{Binding IsStep2}" />
+                    <Button Classes="ghost" Content="Quay lại" HorizontalAlignment="Center" Command="{Binding BackCommand}" />
+                </StackPanel>
+
+                <StackPanel Spacing="14" IsVisible="{Binding IsStep3}">
+                    <Border Classes="stat">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="caption" Text="Mã xác nhận đã gửi tới" />
+                            <TextBlock Text="{Binding ChatTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock TextWrapping="Wrap" Text="Nếu đây không phải tài khoản của bạn, bấm Quay lại và bắt đầu lại từ đúng tài khoản Telegram." Classes="caption" />
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Mã 6 số" Classes="label" />
+                        <TextBox Text="{Binding Code}" MaxLength="6" FontSize="20" LetterSpacing="6"
+                                 HorizontalContentAlignment="Center" PlaceholderText="••••••" />
+                    </StackPanel>
+                    <Button Classes="accent" HorizontalAlignment="Stretch" MinHeight="40" Content="Xác nhận"
+                            Command="{Binding ConfirmCommand}" IsEnabled="{Binding IsIdle}" IsDefault="{Binding IsStep3}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Classes="secondary" HorizontalAlignment="Stretch" Content="Quay lại" Command="{Binding BackCommand}" />
+                        <Button Grid.Column="1" Classes="secondary" HorizontalAlignment="Stretch" Content="Gửi lại mã"
+                                Command="{Binding SendCodeCommand}" IsEnabled="{Binding IsIdle}" />
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Spacing="14" IsVisible="{Binding IsStep4}">
+                    <Border Classes="alert warning">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                            <TextBlock Text="Lưu 10 mã dự phòng này ở nơi an toàn (in ra giấy hoặc trình quản lý mật khẩu). Khi Telegram không nhận được mã đăng nhập, dùng một mã để vào tool. Mỗi mã dùng một lần; các mã chỉ hiện duy nhất lần này." />
+                        </DockPanel>
+                    </Border>
+                    <Border Classes="stat">
+                        <SelectableTextBlock Text="{Binding RecoveryCodesText}" FontFamily="Menlo,Consolas,monospace" FontSize="15"
+                                             LineHeight="26" HorizontalAlignment="Center" />
+                    </Border>
+                    <CheckBox Content="Tôi đã lưu các mã dự phòng" IsChecked="{Binding HasSavedCodes}" />
+                    <Button Classes="accent" HorizontalAlignment="Stretch" MinHeight="40" Content="Hoàn tất"
+                            Command="{Binding FinishCommand}" IsEnabled="{Binding CanFinish}" />
+                </StackPanel>
+
+                <Button Classes="ghost" HorizontalAlignment="Center" Command="{Binding CancelCommand}" IsVisible="{Binding !IsStep4}">
+                    <Panel>
+                        <TextBlock Text="Đăng xuất" IsVisible="{Binding IsMandatory}" />
+                        <TextBlock Text="Huỷ" IsVisible="{Binding !IsMandatory}" />
+                    </Panel>
+                </Button>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

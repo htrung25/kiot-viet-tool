@@ -79,6 +79,13 @@
                                 <TextBlock Text="Kết nối KiotViet" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
+                        <Button Classes="navItem" Classes.active="{Binding IsTelegramActive}"
+                                Command="{Binding OpenTelegramCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <PathIcon Data="{StaticResource Icon.Send}" />
+                                <TextBlock Text="Kết nối Telegram" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </DockPanel>
             </Border>

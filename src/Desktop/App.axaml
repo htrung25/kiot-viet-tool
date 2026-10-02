@@ -37,6 +37,12 @@
         <DataTemplate DataType="vm:DiscountProgramDetailViewModel">
             <views:DiscountProgramDetailView />
         </DataTemplate>
+        <DataTemplate DataType="vm:TelegramSetupViewModel">
+            <views:TelegramSetupView />
+        </DataTemplate>
+        <DataTemplate DataType="vm:TelegramSettingsViewModel">
+            <views:TelegramSettingsView />
+        </DataTemplate>
         <DataTemplate DataType="vm:LockScreenViewModel">
             <views:LockScreenView />
         </DataTemplate>
