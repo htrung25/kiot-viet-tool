@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Phiên bản | **0.3.1** (thay thế 0.3) |
+| Phiên bản | **0.3.2** (thay thế 0.3.1) |
 | Ngày | 01/10/2026 |
 | Trạng thái | Chờ chủ sản phẩm duyệt; các mục đánh dấu **⚠️ Cần chốt** phải được trả lời trước khi triển khai phần liên quan |
 | Người đọc | Chủ cửa hàng (duyệt nghiệp vụ), developer / AI (triển khai), người kiểm thử |
@@ -17,6 +17,7 @@
 | 0.2.1 | 30/09/2026 | Chốt Q8: gỡ feature *Quản lý khách hàng*. Trang chủ tạm thời là màn Sản phẩm (SC-05) |
 | **0.3** | 01/10/2026 | **Đổi mô hình triển khai theo yêu cầu chủ sản phẩm**: toàn bộ chương trình giảm giá (kể cả thời gian) thiết lập **chỉ trong tool**; tool **sửa trực tiếp giá bán (`basePrice`)** của sản phẩm trên KiotViet khi chương trình bắt đầu và **trả lại giá gốc** khi kết thúc; nhân viên bán hàng không biết có chương trình. Bỏ khái niệm *bảng giá đích*, *trung hoà*, hướng dẫn tạo bảng giá (FR-DEP-00), in hướng dẫn thu ngân (FR-OPS-01). Thêm hẹn giờ chạy nền qua Windows Task Scheduler, lưu và bảo vệ giá gốc, xử lý giá bị sửa tay trong lúc chạy. Kết quả gọi thử API thật lần 1 (Phụ lục A). FR-AUTH-05 đã triển khai (khoá màn hình). |
 | **0.3.1** | 01/10/2026 | Đồng bộ với module Triển khai đã code và kiểm thử trên gian hàng thật `luckymart`: A9 ✅ (đổi `basePrice` không ảnh hưởng trường khác), A10 một phần (KiotViet thỉnh thoảng từ chối cả đợt ghi → tool ghi lại từng sản phẩm); BR-06 chỉ xét chương trình đã lên lịch / đang giữ giá (nháp không chặn nhau); huỷ lịch đưa chương trình về Nháp; SC-10 gộp vào SC-09; đánh dấu các phần chưa làm (⏳): sửa ghi chú / loại trừ thêm khi đang chạy, phát hiện giá sửa tay lúc đồng bộ, thông báo Windows khi chạy nền, xuất giá gốc, trả giá khẩn cấp, FR-DEP-11, bảng `PriceOperation`. Đánh dấu ✅ các yêu cầu đã triển khai |
+| **0.3.2** | 01/10/2026 | Xác thực 2 lớp qua Telegram: FR-AUTH-08 (mã đăng nhập 6 số gửi qua bot), FR-AUTH-09 (bắt buộc kết nối Telegram sau khi đổi mật khẩu lần đầu, 10 mã dự phòng), FR-AUTH-10 (khoá khi sai mã). Màn SC-14, bảng `TelegramConnection`, §9.1, Q17–Q18 |
 
 Các mục mới hoặc thay đổi so với 0.2.1 được đánh dấu **[v0.3]**.
 
@@ -158,6 +159,9 @@ Mức ưu tiên: **Must** (bắt buộc cho bản đầu) · **Should** (nên c�
 | FR-AUTH-04 | Đăng xuất; mọi màn hình khác yêu cầu đã đăng nhập | Must ✅ |
 | FR-AUTH-05 | **[v0.3]** Sau N phút không thao tác (mặc định 30, `Auth:IdleLockMinutes`, 0 = tắt) tool **khoá màn hình**: màn đang làm và dữ liệu nhập dở được giữ, nhập lại mật khẩu để mở; cảnh báo đếm ngược trước khi khoá (mặc định 60 giây); không khoá khi đang đồng bộ / áp giá / trả giá; nhập sai 5 lần thì đăng xuất. **Áp giá / trả giá theo lịch vẫn chạy khi đang khoá** | Should ✅ |
 | FR-AUTH-06 | Sai mật khẩu 5 lần liên tiếp → khoá đăng nhập 5 phút, hiện thời gian còn lại; đăng nhập đúng thì đặt lại bộ đếm | Should |
+| FR-AUTH-08 | **[v0.3.2]** Đăng nhập 2 lớp: mật khẩu đúng → bot Telegram gửi **mã 6 số** (ngẫu nhiên mật mã học, hết hạn sau 5 phút, tối đa 5 lần nhập cho mỗi mã, gửi lại sau 60 giây). Chỉ khi nhập đúng mã mới vào tool. Không gửi được mã (mạng chặn Telegram…) → báo lỗi và gợi ý **Gửi lại mã** hoặc **dùng mã dự phòng**. Mở khoá màn hình (FR-AUTH-05) chỉ cần mật khẩu, không cần mã | Must ✅ |
+| FR-AUTH-09 | **[v0.3.2]** Bắt buộc kết nối Telegram: sau khi đổi mật khẩu lần đầu (FR-AUTH-02), tool chỉ cho dùng màn **Kết nối Telegram** (SC-14) cho tới khi xong. Chủ cửa hàng **tự tạo bot** qua @BotFather → dán Bot Token → bấm Bắt đầu trong bot → tool nhận ra cuộc trò chuyện → gửi mã xác nhận → nhập đúng mã → tool hiện **10 mã dự phòng** (16 ký tự, dùng một lần, chỉ hiện một lần, lưu dạng băm). Token mã hoá DPAPI. Kết nối lại (đổi bot / tài khoản Telegram) ở màn Telegram, tạo bộ mã dự phòng mới | Must ✅ |
+| FR-AUTH-10 | **[v0.3.2]** Sai mã đăng nhập hoặc mã dự phòng **10 lần** (cộng dồn qua các lần đăng nhập) → khoá đăng nhập 15 phút; nhập đúng thì đặt lại bộ đếm | Must ✅ |
 | FR-AUTH-07 | Khôi phục mật khẩu: khi đổi mật khẩu lần đầu, tool sinh **mã khôi phục** (hiển thị một lần). Quên mật khẩu → nhập mã khôi phục để đặt mật khẩu mới; mã cũ hết hiệu lực, sinh mã mới (⚠️ Q10) | Should |
 
 ### 3.2 Module KV — Kết nối KiotViet
@@ -458,7 +462,7 @@ Trạng thái được **lưu** trong DB (do tool thực hiện, không suy ra t
 
 | Mã | Màn hình | Nội dung chính | Yêu cầu liên quan |
 |---|---|---|---|
-| SC-01 | Đăng nhập | Tên đăng nhập, mật khẩu, Quên mật khẩu | FR-AUTH-01, 06, 07 |
+| SC-01 | Đăng nhập | Tên đăng nhập, mật khẩu, Quên mật khẩu; bước 2: mã Telegram / mã dự phòng, Gửi lại mã | FR-AUTH-01, 06, 07, 08, 10 |
 | SC-02 | Đổi mật khẩu | Mật khẩu cũ/mới/nhập lại; hiển thị mã khôi phục | FR-AUTH-02, 03, 07 |
 | SC-03 | Tổng quan (trang chủ) | Trạng thái kết nối, lần đồng bộ gần nhất, CTGG đang chạy / sắp chạy, **CTGG quá hạn chưa trả giá, giá bị sửa tay** | FR-KV-05, FR-DEP-05, 07 |
 | SC-04 | Kết nối KiotViet | Retailer, Client ID, Secret, Kiểm tra, Lưu, Ngắt kết nối | FR-KV-01…07 ✅ |
@@ -471,6 +475,7 @@ Trạng thái được **lưu** trong DB (do tool thực hiện, không suy ra t
 | SC-11 | Nhật ký | Lọc theo thời gian, loại thao tác | FR-LOG-01 |
 | SC-12 | Cài đặt | Mặc định CTGG, sao lưu/khôi phục, tự khoá, trả giá gốc khẩn cấp | FR-SET-*, FR-AUTH-05, FR-DEP-09 |
 | SC-13 | Màn khoá | Nhập mật khẩu để mở khoá, Đăng xuất | FR-AUTH-05 ✅ |
+| SC-14 | Kết nối Telegram ✅ | Bắt buộc lần đầu (toàn màn hình, 4 bước: Bot → Bắt đầu chat → Xác nhận → Mã dự phòng); sau đó là trang Telegram: bot, người nhận, số mã dự phòng còn lại, Kết nối lại | FR-AUTH-08, 09 |
 
 ---
 
@@ -478,7 +483,8 @@ Trạng thái được **lưu** trong DB (do tool thực hiện, không suy ra t
 
 | Thực thể | Trường chính | Ghi chú |
 |---|---|---|
-| `UserAccount` | Username, PasswordHash, MustChangePassword, FailedLoginCount, LockedUntil, RecoveryCodeHash | ✅ 3 trường đầu; bổ sung 3 trường cuối |
+| `UserAccount` | Username, PasswordHash, MustChangePassword, FailedLoginCount, LockedUntil, RecoveryCodeHash, **RecoveryCodeHashes** (mã dự phòng Telegram, băm), **FailedOtpCount**, **OtpLockedUntilUtc** | ✅ PasswordHash, MustChangePassword và 3 trường Telegram; chưa làm FailedLoginCount, LockedUntil, RecoveryCodeHash |
+| `TelegramConnection` | EncryptedBotToken, BotUsername, ChatId, ChatTitle, ConnectedAtUtc | ✅ **[v0.3.2]** Một dòng duy nhất. Mã đăng nhập đang chờ chỉ giữ trong bộ nhớ, không lưu DB |
 | `KiotVietConnection` | Retailer, ClientId, ClientSecretEncrypted, LastSyncedAt, ProductsSyncedFrom, ServerClockOffsetSec | ✅ trừ ServerClockOffsetSec |
 | `ApiQuota` | WindowStart, GetCount | Bộ đếm lượt gọi (FR-KV-04) |
 | `Category`, `Product` | như v0.2 | ✅ Đồng bộ |
@@ -508,6 +514,10 @@ Tiền lưu dạng số nguyên VND. Thời gian lưu UTC, hiển thị UTC+7. D
 | Webhook | `product.update` … | Không dùng (tool desktop không nhận webhook) |
 
 Base URL: `https://public.kiotapi.com`. Header bắt buộc: `Retailer`, `Authorization: Bearer <token>`.
+
+### 9.1 Telegram Bot API **[v0.3.2]**
+
+Gọi `https://api.telegram.org/bot<token>/<method>` (đổi được bằng `Telegram:ApiBaseUrl`, đi qua proxy nếu có `Telegram:ProxyUrl`): `getMe` (kiểm tra token), `getUpdates` (tìm tin `/start` mới nhất trong chat riêng), `sendMessage` (gửi mã). Token nằm trong URL nên **không bao giờ ghi URL vào log**. Bot không được dùng webhook (409). Lỗi 401/404 → token sai; 403 → người dùng chặn bot / chưa bấm Bắt đầu; 429 → chờ `retry_after`.
 
 ---
 
@@ -590,6 +600,8 @@ Thực hiện trên gian hàng KiotViet thử (hoặc gian hàng thật ngoài g
 | **Q13** | Gian hàng đang dùng gói KiotViet nào? | ✅ Đã kết nối được API trên gian hàng `luckymart` (01/10/2026) | — |
 | **Q14** | **[v0.3]** Thời điểm bắt đầu: luôn *ngay khi xác nhận* hay cần thêm *hẹn giờ*? | Có cả hai, mặc định *ngay* | FR-PROMO-01, FR-DEP-08 |
 | **Q15** | **[v0.3]** Máy cài tool là máy nào, có bật và đăng nhập Windows vào giờ bắt đầu / kết thúc không? | Máy Windows chủ cửa hàng dùng hằng ngày; chấp nhận trả giá trễ khi máy tắt (có cảnh báo) | FR-DEP-07, 08, NFR-12 |
+| **Q17** | **[v0.3.2]** Mạng cửa hàng có chặn Telegram không? Nếu có, dùng proxy nào? | Không chặn (máy dev gọi được). Nếu bị chặn: cấu hình `Telegram:ProxyUrl`, trong lúc chờ dùng mã dự phòng | FR-AUTH-08 |
+| **Q18** | **[v0.3.2]** Mất cả điện thoại Telegram lẫn mã dự phòng thì vào lại tool thế nào? | Hiện chưa có đường khôi phục: phải xoá `app.db` (mất chương trình đã tạo) hoặc nhờ kỹ thuật sửa DB. Cân nhắc làm cùng FR-AUTH-07 | FR-AUTH-09 |
 | **Q16** | **[v0.3]** Cửa hàng có đang dùng bảng giá KiotViet khác (giá sỉ, theo nhóm khách…) không? Có bảng giá nào tính theo công thức từ giá chung không? | Có thì cảnh báo trong xem trước (BR-06, A12, A13) | BR-06 |
 
 ---

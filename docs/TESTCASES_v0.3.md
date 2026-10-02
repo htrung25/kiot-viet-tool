@@ -1,4 +1,4 @@
-# Test case kiểm thử thủ công — KiotViet Tool (theo SRS v0.3.1)
+# Test case kiểm thử thủ công — KiotViet Tool (theo SRS v0.3.2)
 
 | | |
 |---|---|
@@ -46,6 +46,32 @@ Tổng tiền giảm khi "giảm 10% toàn bộ" (mỗi SP 1 đơn vị): **274.
 | TC-AUTH-07 | Mở khoá đúng | Nhập đúng mật khẩu | Quay lại đúng màn Tạo chương trình, tên "Thử khoá" vẫn còn | | |
 | TC-AUTH-08 | Sai 5 lần | Khoá lại, nhập sai 5 lần | Bị đăng xuất về màn Đăng nhập | | |
 | TC-AUTH-09 | Không khoá khi đang đồng bộ | Bấm Đồng bộ ngay rồi để yên | Không khoá trong lúc đồng bộ (đồng bộ nhanh nên khó thấy — ghi Bỏ qua nếu không quan sát được) | | |
+
+---
+
+## 1b. Mã đăng nhập Telegram (FR-AUTH-08…10, SRS v0.3.2)
+
+Cần: điện thoại có Telegram. Làm theo thứ tự. Với máy đã dùng bản cũ (chưa có Telegram), đăng nhập xong tool sẽ tự chuyển sang màn kết nối Telegram.
+
+| Mã | Tên | Các bước | Kết quả mong đợi | Kết quả | Ghi chú |
+|---|---|---|---|---|---|
+| TC-TG-01 | Bắt buộc kết nối | Đăng nhập (lần đầu thì đổi mật khẩu trước) | Màn **Kết nối Telegram để tiếp tục**, không có sidebar, chỉ có nút Đăng xuất | | |
+| TC-TG-02 | Token sai | Dán `123:abc` → Kiểm tra bot | Báo "Bot Token không đúng hoặc đã bị thu hồi…" | | |
+| TC-TG-03 | Token đúng | Trong Telegram mở @BotFather → /newbot → dán token → Kiểm tra bot | Sang bước 2, hiện `t.me/<tên bot>` | | |
+| TC-TG-04 | Chưa bấm Start | Bấm **Tôi đã bấm Bắt đầu** khi chưa mở bot | Báo "Chưa thấy tin /start nào…" | | |
+| TC-TG-05 | Nhận mã xác nhận | Mở bot trên điện thoại → Bắt đầu → quay lại bấm nút | Sang bước 3, hiện tên Telegram của bạn; điện thoại nhận "Mã xác nhận kết nối…" | | |
+| TC-TG-06 | Sai mã xác nhận | Nhập 000000 → Xác nhận | "Mã không đúng. Còn 4 lần thử." | | |
+| TC-TG-07 | Mã dự phòng | Nhập đúng mã | Bước 4: 10 mã dạng XXXX-XXXX-XXXX-XXXX; nút Hoàn tất mờ tới khi tích "Tôi đã lưu…". **Chép lại 2 mã** để dùng ở TC-TG-12 | | |
+| TC-TG-08 | Hoàn tất | Tích ô → Hoàn tất | Vào màn Sản phẩm, có sidebar; toast "Đã kết nối Telegram…" | | |
+| TC-TG-09 | Trang Telegram | Sidebar → Kết nối Telegram | Hiện bot, người nhận, "10/10 mã", thời gian kết nối | | |
+| TC-TG-10 | Đăng nhập có mã | Đăng xuất → đăng nhập | Bước "Nhập mã xác thực"; điện thoại nhận "Mã đăng nhập…"; nhập đúng → vào tool | | |
+| TC-TG-11 | Gửi lại mã | Đăng nhập → bấm Gửi lại mã ngay | Báo chờ N giây; sau 60 giây bấm lại thì nhận mã mới, mã cũ không dùng được | | |
+| TC-TG-12 | Dùng mã dự phòng | Đăng nhập → Dùng mã dự phòng → nhập 1 mã đã chép | Vào tool, toast "Đã dùng 1 mã dự phòng, còn 9 mã…". Thử lại cùng mã ở lần sau → bị từ chối | | |
+| TC-TG-13 | Sai 5 lần | Nhập sai mã 5 lần | Về bước mật khẩu, báo "Sai mã 5 lần…" | | |
+| TC-TG-14 | Khoá 15 phút | Tiếp tục nhập sai tới tổng 10 lần | "Đăng nhập tạm khoá… 15 phút"; nhập đúng mật khẩu vẫn bị từ chối tới hết giờ | | Có thể ghi Bỏ qua |
+| TC-TG-15 | Mất mạng | Tắt Wi-Fi → đăng nhập | Vẫn sang bước mã, thông báo "Không gửi được mã qua Telegram… dùng mã dự phòng"; mã dự phòng vẫn dùng được | | |
+| TC-TG-16 | Khoá màn hình | Để tool tự khoá (FR-AUTH-05) | Mở khoá chỉ cần mật khẩu, không gửi mã | | |
+| TC-TG-17 | Kết nối lại | Trang Telegram → Kết nối lại → làm lại 4 bước | Bộ mã dự phòng mới (mã cũ hết hiệu lực), trang Telegram hiện 10/10 | | |
 
 ---
 
