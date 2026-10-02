@@ -40,6 +40,13 @@ public static class DependencyInjection
                 $"{KiotVietOptions.SectionName}: timeout, rate limit and retries must be positive.")
             .ValidateOnStart();
 
+        services.AddOptions<TelegramOptions>()
+            .Bind(configuration.GetSection(TelegramOptions.SectionName))
+            .Validate(o => Uri.TryCreate(o.ApiBaseUrl, UriKind.Absolute, out _) && o.RequestTimeoutSeconds > 0
+                && (string.IsNullOrWhiteSpace(o.ProxyUrl) || Uri.TryCreate(o.ProxyUrl, UriKind.Absolute, out _)),
+                $"{TelegramOptions.SectionName}: ApiBaseUrl (and ProxyUrl when set) must be absolute URLs, timeout positive.")
+            .ValidateOnStart();
+
         services.AddDbContextFactory<AppDbContext>((sp, options) =>
         {
             var path = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ResolvedPath;
@@ -56,6 +63,9 @@ public static class DependencyInjection
         services.AddTransient<IProgramPriceRepository, ProgramPriceRepository>();
         services.AddTransient<IDatabaseBackupService, SqliteBackupService>();
         services.AddSingleton<ITaskSchedulerService, WindowsTaskSchedulerService>();
+        services.AddSingleton<ITelegramApiService, TelegramApiService>();
+        services.AddSingleton<IOneTimeCodeService, OneTimeCodeService>();
+        services.AddTransient<ITelegramConnectionRepository, TelegramConnectionRepository>();
         services.AddTransient<DatabaseInitializer>();
         return services;
     }

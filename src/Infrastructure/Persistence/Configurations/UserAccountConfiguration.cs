@@ -16,5 +16,6 @@ internal sealed class UserAccountConfiguration : IEntityTypeConfiguration<UserAc
         builder.HasIndex(u => u.Username).IsUnique();
 
         builder.Property(u => u.PasswordHash).HasMaxLength(200).IsRequired();
+        builder.PrimitiveCollection(u => u.RecoveryCodeHashes);
     }
 }
