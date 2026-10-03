@@ -36,6 +36,7 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
     };
     readonly KiotVietOptions _options;
     readonly TimeProvider _timeProvider;
+    readonly IServerClockService _clock;
     readonly ILogger<KiotVietApiService> _logger;
     readonly Queue<DateTime> _recentGets = new();
     readonly SemaphoreSlim _getLock = new(1, 1);
@@ -45,11 +46,30 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
     CachedToken? _token;
     bool _missingTypeLogged;
 
-    public KiotVietApiService(IOptions<KiotVietOptions> options, TimeProvider timeProvider, ILogger<KiotVietApiService> logger)
+    public KiotVietApiService(IOptions<KiotVietOptions> options, TimeProvider timeProvider, IServerClockService clock,
+        ILogger<KiotVietApiService> logger)
     {
         _options = options.Value;
         _timeProvider = timeProvider;
+        _clock = clock;
         _logger = logger;
+    }
+
+    public async Task SyncClockAsync(CancellationToken cancellationToken)
+    {
+        if (!_clock.IsStale) return;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(_options.RequestTimeoutSeconds));
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Head, _options.ApiBaseUrl);
+            using var response = await _http.SendAsync(request, timeout.Token);
+            if (response.Headers.Date is { } date) _clock.Observe(date);
+        }
+        catch (Exception ex) when (ex is HttpRequestException || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        {
+            _logger.LogInformation("Could not read KiotViet server time: {Error}", ex.Message);
+        }
     }
 
     public async Task<int> CountProductsAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken) =>
@@ -252,6 +272,7 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
             try
             {
                 var response = await _http.SendAsync(request, HttpCompletionOption.ResponseContentRead, timeout.Token);
+                if (response.Headers.Date is { } serverTime) _clock.Observe(serverTime);
                 _logger.LogInformation("KiotViet {Method} {Path} → {Status} in {Elapsed} ms",
                     request.Method, request.RequestUri?.AbsolutePath, (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
 

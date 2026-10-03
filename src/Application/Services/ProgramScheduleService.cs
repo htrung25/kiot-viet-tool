@@ -6,19 +6,24 @@ using Microsoft.Extensions.Logging;
 
 namespace KiotVietTool.Application.Services;
 
-internal sealed class ProgramScheduleService(ITaskSchedulerService scheduler, ILogger<ProgramScheduleService> logger)
+internal sealed class ProgramScheduleService(
+    ITaskSchedulerService scheduler,
+    IKiotVietApiService api,
+    IServerClockService clock,
+    ILogger<ProgramScheduleService> logger)
 {
     public async Task SyncAsync(DiscountProgram program, CancellationToken cancellationToken)
     {
         try
         {
+            await api.SyncClockAsync(cancellationToken);
             if (program.Status == ProgramStatusEnum.Scheduled && program.StartAtUtc is { } start)
-                await scheduler.ScheduleAsync(StartTaskName(program.Id), start, cancellationToken);
+                await scheduler.ScheduleAsync(StartTaskName(program.Id), clock.ToMachineUtc(start), cancellationToken);
             else
                 await scheduler.RemoveAsync(StartTaskName(program.Id), cancellationToken);
 
             if (program.Status is ProgramStatusEnum.Scheduled || program.HoldsKiotVietPrices)
-                await scheduler.ScheduleAsync(EndTaskName(program.Id), program.EndAtUtc, cancellationToken);
+                await scheduler.ScheduleAsync(EndTaskName(program.Id), clock.ToMachineUtc(program.EndAtUtc), cancellationToken);
             else
                 await scheduler.RemoveAsync(EndTaskName(program.Id), cancellationToken);
         }

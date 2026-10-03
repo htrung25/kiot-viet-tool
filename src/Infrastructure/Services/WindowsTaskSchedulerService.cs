@@ -47,6 +47,11 @@ public sealed class WindowsTaskSchedulerService(ILogger<WindowsTaskSchedulerServ
           </RegistrationInfo>
           <Triggers>
             <TimeTrigger>
+              <Repetition>
+                <Interval>PT5M</Interval>
+                <Duration>P1D</Duration>
+                <StopAtDurationEnd>false</StopAtDurationEnd>
+              </Repetition>
               <StartBoundary>{runAtUtc.ToUniversalTime():yyyy-MM-ddTHH:mm:ss}Z</StartBoundary>
               <Enabled>true</Enabled>
             </TimeTrigger>

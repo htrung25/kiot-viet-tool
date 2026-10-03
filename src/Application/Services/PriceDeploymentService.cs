@@ -128,6 +128,7 @@ internal sealed class PriceDeploymentService(
 
     public async Task<int> RunDueAsync(CancellationToken cancellationToken = default)
     {
+        await api.SyncClockAsync(cancellationToken);
         if (!await _gate.WaitAsync(0, cancellationToken)) return 0;
         var handled = 0;
         try

@@ -1,5 +1,7 @@
 using System.ComponentModel;
 
+using Avalonia.Threading;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -13,14 +15,21 @@ public sealed partial class MainViewModel : ObservableObject
     readonly IUserSessionService _session;
     readonly IAuthService _authService;
     readonly LockScreenViewModel _lockScreen;
+    readonly IServerClockService _clock;
 
     public MainViewModel(INavigationService navigation, IUserSessionService session, IAuthService authService,
-        IdleLockService idleLock, LockScreenViewModel lockScreen)
+        IdleLockService idleLock, LockScreenViewModel lockScreen, IServerClockService clock)
     {
         Navigation = navigation;
         _session = session;
         _authService = authService;
         _lockScreen = lockScreen;
+        _clock = clock;
+        _clock.OffsetChanged += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(ClockWarning));
+            OnPropertyChanged(nameof(ShowClockWarning));
+        });
         IdleLock = idleLock;
         IdleLock.PropertyChanged += (_, e) =>
         {
@@ -31,6 +40,7 @@ public sealed partial class MainViewModel : ObservableObject
         _session.Changed += (_, _) =>
         {
             OnPropertyChanged(nameof(ShowChrome));
+            OnPropertyChanged(nameof(ShowClockWarning));
             OnPropertyChanged(nameof(Username));
             OnPropertyChanged(nameof(UserInitial));
         };
@@ -44,6 +54,20 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Sidebar is hidden on Login, the forced first-login password change and the mandatory Telegram setup (full-screen flows).</summary>
     public bool ShowChrome => _session.CurrentUser is { MustChangePassword: false, NeedsTelegram: false }
         && Navigation.CurrentViewModel is not TelegramSetupViewModel { IsMandatory: true };
+
+    public bool ShowClockWarning => ShowChrome && _clock.IsSkewed;
+
+    public string ClockWarning
+    {
+        get
+        {
+            var offset = _clock.Offset;
+            var minutes = Math.Round(offset.Duration().TotalMinutes);
+            return $"Giờ máy tính đang {(offset > TimeSpan.Zero ? "chậm" : "nhanh")} {minutes:0} phút so với KiotViet. "
+                + "Tool vẫn áp / trả giá theo giờ KiotViet, nhưng hãy chỉnh lại giờ Windows "
+                + "(Cài đặt → Thời gian & ngôn ngữ → Ngày & giờ → Đồng bộ ngay).";
+        }
+    }
 
     public string? Username => _session.CurrentUser?.Username;
     public string UserInitial => Username is { Length: > 0 } name ? name[..1].ToUpperInvariant() : "";
@@ -59,6 +83,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (e.PropertyName == nameof(INavigationService.CurrentViewModel))
         {
             OnPropertyChanged(nameof(ShowChrome));
+            OnPropertyChanged(nameof(ShowClockWarning));
             OnPropertyChanged(nameof(IsProductsActive));
             OnPropertyChanged(nameof(IsConnectionActive));
             OnPropertyChanged(nameof(IsTelegramActive));

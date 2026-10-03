@@ -3,6 +3,7 @@ using KiotVietTool.Application.Services;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace KiotVietTool.Application;
 
@@ -10,7 +11,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton(sp => new ServerClockService(TimeProvider.System, sp.GetRequiredService<ILogger<ServerClockService>>()));
+        services.AddSingleton<IServerClockService>(sp => sp.GetRequiredService<ServerClockService>());
+        services.TryAddSingleton<TimeProvider>(sp => sp.GetRequiredService<ServerClockService>());
 
         services.AddSingleton<UserSessionService>();
         services.AddSingleton<IUserSessionService>(sp => sp.GetRequiredService<UserSessionService>());

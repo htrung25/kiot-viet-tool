@@ -91,7 +91,16 @@
             </Border>
 
             <!-- Page -->
-            <ContentControl Grid.Column="1" Content="{Binding Navigation.CurrentViewModel}" />
+            <DockPanel Grid.Column="1">
+                <Border DockPanel.Dock="Top" Classes="alert warning" Margin="32,20,32,0"
+                        IsVisible="{Binding ShowClockWarning}">
+                    <DockPanel>
+                        <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                        <TextBlock Text="{Binding ClockWarning}" />
+                    </DockPanel>
+                </Border>
+                <ContentControl Content="{Binding Navigation.CurrentViewModel}" />
+            </DockPanel>
         </Grid>
 
         <Border Classes="alert warning" IsVisible="{Binding IdleLock.IsWarning}" HorizontalAlignment="Center"
