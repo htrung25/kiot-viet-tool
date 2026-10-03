@@ -332,7 +332,7 @@ internal sealed class PriceDeploymentService(
                 await api.UpdateBasePricesAsync(credentials, [.. batch.Select(i => new ProductPriceUpdateDto(i.ProductId, priceOf(i)))], cancellationToken);
                 foreach (var item in batch) onSuccess(item);
             }
-            catch (KiotVietApiException batchError)
+            catch (KiotVietApiException batchError) when (batchError.IsRejected)
             {
                 logger.LogWarning(batchError, "Batch price update failed for program {ProgramId}; retrying one by one", program.Id);
                 foreach (var item in batch)
@@ -342,7 +342,7 @@ internal sealed class PriceDeploymentService(
                         await api.UpdateBasePriceAsync(credentials, new ProductPriceUpdateDto(item.ProductId, priceOf(item)), cancellationToken);
                         onSuccess(item);
                     }
-                    catch (KiotVietApiException itemError)
+                    catch (KiotVietApiException itemError) when (itemError.IsRejected)
                     {
                         onError(item, itemError.Message);
                         failures++;

@@ -331,8 +331,9 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
                 $"Không truy cập được gian hàng \"{retailer}\". Kiểm tra lại tên Retailer và gian hàng đã bật Thiết lập kết nối API (Thiết lập cửa hàng → Thiết lập kết nối API)."),
             _ when status >= 500 => new KiotVietApiException(ServerErrorMessage),
             _ when body.Contains("retailer", StringComparison.OrdinalIgnoreCase) => new KiotVietApiException(
-                "Không tìm thấy gian hàng. Kiểm tra lại tên Retailer."),
-            _ => new KiotVietApiException($"KiotViet từ chối yêu cầu (mã {status}). Chi tiết đã được ghi vào file log."),
+                "Không tìm thấy gian hàng. Kiểm tra lại tên Retailer.", statusCode: status),
+            _ => new KiotVietApiException($"KiotViet từ chối yêu cầu (mã {status}). Chi tiết đã được ghi vào file log.",
+                statusCode: status),
         };
     }
 
