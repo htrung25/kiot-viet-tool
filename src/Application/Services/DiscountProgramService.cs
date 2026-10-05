@@ -12,8 +12,6 @@ namespace KiotVietTool.Application.Services;
 internal sealed class DiscountProgramService(
     IDiscountProgramRepository programs,
     ICatalogRepository catalog,
-    IProgramPriceRepository prices,
-    ProgramScheduleService schedule,
     TimeProvider timeProvider,
     ILogger<DiscountProgramService> logger) : IDiscountProgramService
 {
@@ -26,10 +24,10 @@ internal sealed class DiscountProgramService(
         var all = await programs.GetAllAsync(cancellationToken);
 
         return [.. all
-            .Where(p => includeLongEnded || !p.IsFinished || p.EndAtUtc > now - LongEndedAfter)
+            .Where(p => includeLongEnded || !p.IsFinishedAt(now) || (p.FinishedAtUtc ?? p.EndAtUtc) > now - LongEndedAfter)
             .OrderByDescending(p => p.EffectiveStartAt(now)).ThenByDescending(p => p.Id)
             .Select(p => new DiscountProgramListItemDto(p.Id, p.Name, p.Type, p.Value, p.StartMode, p.StartAtUtc, p.EndAtUtc,
-                p.Scope, p.Scope == ScopeEnum.Categories ? p.CategoryIds.Count : p.ProductIds.Count, p.Status, p.IsOverdueAt(now)))];
+                p.Scope, ScopeItemCount(p), p.PhaseAt(now)))];
     }
 
     public async Task<SaveDiscountProgramDto?> GetForEditAsync(int id, CancellationToken cancellationToken = default) =>
@@ -52,14 +50,21 @@ internal sealed class DiscountProgramService(
 
     public async Task<DiscountProgramDetailDto?> GetDetailAsync(int programId, CancellationToken cancellationToken = default)
     {
-        var p = await programs.GetAsync(programId, cancellationToken);
-        if (p is null) return null;
-        var items = await prices.GetAsync(programId, cancellationToken);
-        return new DiscountProgramDetailDto(p.Id, p.Name, p.Type, p.Value, p.Rounding, p.StartMode, p.StartAtUtc, p.EndAtUtc,
-            p.Scope, p.Scope == ScopeEnum.Categories ? p.CategoryIds.Count : p.ProductIds.Count, p.Note, p.Status,
-            p.IsOverdueAt(UtcNow), p.FinishedAtUtc,
-            [.. items.OrderBy(i => i.ProductCode, StringComparer.Ordinal).Select(i => new ProgramPriceDto(i.ProductId, i.ProductCode,
-                i.ProductName, i.OriginalPrice, i.DiscountedPrice, i.State, i.LastError, i.AppliedAtUtc, i.RestoredAtUtc))]);
+        var context = await LoadContextAsync(cancellationToken);
+        if (context.Programs.FirstOrDefault(p => p.Id == programId) is not { } p) return null;
+        return new DiscountProgramDetailDto(p.Id, p.Name, p.Type, p.Value, p.StartMode, p.StartAtUtc, p.EndAtUtc,
+            p.Scope, ScopeItemCount(p), p.Note, p.PhaseAt(UtcNow), p.FinishedAtUtc, EvaluateProgram(p, context));
+    }
+
+    public async Task<IReadOnlyList<DiscountFeedProgramDto>> GetFeedProgramsAsync(CancellationToken cancellationToken = default)
+    {
+        var context = await LoadContextAsync(cancellationToken);
+        var now = UtcNow;
+        return [.. context.Programs
+            .Where(p => p.IsPublished && !p.IsEndedAt(now))
+            .OrderBy(p => p.Id)
+            .Select(p => new DiscountFeedProgramDto(p.Id, p.Name, p.Type, p.Value, p.EffectiveStartAt(now), p.EndAtUtc,
+                [.. ResolveScope(p, context).Where(x => p.Quote(x).IsApplied).Select(x => x.Id).Order()]))];
     }
 
     public async Task<Result<int>> SaveAsync(SaveDiscountProgramDto request, CancellationToken cancellationToken = default)
@@ -71,7 +76,7 @@ internal sealed class DiscountProgramService(
 
         var name = request.Name.Trim();
         var now = UtcNow;
-        var duplicate = context.Programs.FirstOrDefault(p => p.Id != request.Id && !p.IsFinished && !p.IsEndedAt(now)
+        var duplicate = context.Programs.FirstOrDefault(p => p.Id != request.Id && !p.IsFinishedAt(now)
             && string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase));
         if (duplicate is not null) return Result.Failure<int>("Đã có chương trình chưa kết thúc mang tên này.");
         if (preview.ConflictCount > 0)
@@ -83,16 +88,15 @@ internal sealed class DiscountProgramService(
             {
                 var existing = await programs.GetAsync(id, cancellationToken);
                 if (existing is null) return Result.Failure<int>("Không tìm thấy chương trình.");
-                existing.Update(request.Name, request.Type, request.Value, request.Rounding, request.StartMode, request.StartAtUtc,
+                existing.Update(request.Name, request.Type, request.Value, request.StartMode, request.StartAtUtc,
                     request.EndAtUtc, request.Scope, request.CategoryIds, request.ProductIds, request.ExcludedProductIds,
                     request.UnitScope, request.Note, now);
                 await programs.UpdateAsync(existing, cancellationToken);
-                if (existing.Status == ProgramStatusEnum.Scheduled) await schedule.SyncAsync(existing, cancellationToken);
                 logger.LogInformation("Discount program {ProgramId} updated", existing.Id);
                 return Result.Success(existing.Id);
             }
 
-            var program = DiscountProgram.Create(request.Name, request.Type, request.Value, request.Rounding, request.StartMode,
+            var program = DiscountProgram.Create(request.Name, request.Type, request.Value, request.StartMode,
                 request.StartAtUtc, request.EndAtUtc, request.Scope, request.CategoryIds, request.ProductIds,
                 request.ExcludedProductIds, request.UnitScope, request.Note, now);
             await programs.AddAsync(program, cancellationToken);
@@ -132,12 +136,13 @@ internal sealed class DiscountProgramService(
         catch (DomainException ex) { return Result.Failure(ex.Message); }
 
         await programs.DeleteAsync(program, cancellationToken);
-        await schedule.RemoveAsync(id, cancellationToken);
         logger.LogInformation("Discount program {ProgramId} deleted", id);
         return Result.Success();
     }
 
     DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
+
+    static int ScopeItemCount(DiscountProgram p) => p.Scope == ScopeEnum.Categories ? p.CategoryIds.Count : p.ProductIds.Count;
 
     async Task<PricingContext> LoadContextAsync(CancellationToken cancellationToken)
     {
@@ -155,7 +160,7 @@ internal sealed class DiscountProgramService(
         DiscountProgram program;
         try
         {
-            program = DiscountProgram.Create(request.Name, request.Type, request.Value, request.Rounding, request.StartMode,
+            program = DiscountProgram.Create(request.Name, request.Type, request.Value, request.StartMode,
                 request.StartAtUtc, request.EndAtUtc, request.Scope, request.CategoryIds, request.ProductIds,
                 request.ExcludedProductIds, request.UnitScope, request.Note, UtcNow);
         }
@@ -172,7 +177,7 @@ internal sealed class DiscountProgramService(
         var selfId = programId ?? program.Id;
         var start = program.EffectiveStartAt(now);
         var conflicts = new Dictionary<long, string>();
-        foreach (var other in context.Programs.Where(p => p.Id != selfId && !p.IsDraft && !p.IsFinished && !p.IsEndedAt(now)
+        foreach (var other in context.Programs.Where(p => p.Id != selfId && p.IsPublished && !p.IsEndedAt(now)
                      && p.OverlapsWith(start, program.EndAtUtc, now)))
             foreach (var product in ResolveScope(other, context).Where(x => other.Quote(x).IsApplied))
                 conflicts.TryAdd(product.Id, other.Name);
@@ -230,7 +235,7 @@ internal sealed class DiscountProgramService(
     }
 
     static SaveDiscountProgramDto ToDto(DiscountProgram p) =>
-        new(p.Id, p.Name, p.Type, p.Value, p.Rounding, p.StartMode, p.StartAtUtc, p.EndAtUtc, p.Scope, p.CategoryIds,
+        new(p.Id, p.Name, p.Type, p.Value, p.StartMode, p.StartAtUtc, p.EndAtUtc, p.Scope, p.CategoryIds,
             p.ProductIds, p.ExcludedProductIds, p.UnitScope, p.Note);
 
     static string ReasonText(ExclusionReasonEnum reason) => reason switch
@@ -243,8 +248,7 @@ internal sealed class DiscountProgramService(
         ExclusionReasonEnum.Deleted => "Không còn trên KiotViet",
         ExclusionReasonEnum.NotBaseUnit => "Không phải đơn vị cơ bản",
         ExclusionReasonEnum.ManuallyExcluded => "Loại trừ thủ công",
-        ExclusionReasonEnum.InvalidDiscountedPrice => "Giá sau giảm không hợp lệ",
-        ExclusionReasonEnum.DiscountTooSmall => "Mức giảm quá nhỏ sau làm tròn",
+        ExclusionReasonEnum.InvalidDiscountedPrice => "Mức giảm lớn hơn giá bán",
         _ => reason.ToString(),
     };
 

@@ -12,7 +12,7 @@
             </Button>
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Title}" Classes="h1" />
-                <TextBlock Text="Lưu nháp chưa ảnh hưởng tới KiotViet; Lưu và áp dụng sẽ đổi giá bán trên KiotViet sau khi bạn xác nhận." Classes="subtitle" />
+                <TextBlock Text="Lưu nháp chưa ảnh hưởng tới quầy thu ngân; Lưu và áp dụng gửi chương trình tới máy thu ngân sau khi bạn xác nhận." Classes="subtitle" />
             </StackPanel>
         </DockPanel>
 
@@ -71,10 +71,9 @@
                                 <TextBlock Text="{Binding ValueHint}" Classes="caption" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Classes="field">
-                                <TextBlock Text="Làm tròn giá sau giảm" Classes="label" />
-                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding RoundingOptions}"
-                                          SelectedItem="{Binding SelectedRounding}" />
-                                <TextBlock Text="Luôn làm tròn xuống, có lợi cho khách." Classes="caption" />
+                                <TextBlock Text="Cách giảm" Classes="label" />
+                                <TextBlock Text="Giá bán trên KiotViet giữ nguyên. Khi thu ngân bấm Thanh toán, tiền giảm được cộng vào ô Giảm giá của hoá đơn, không làm tròn."
+                                           Classes="caption" TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
 
@@ -110,7 +109,7 @@
                         <Border Classes="alert warning">
                             <DockPanel>
                                 <PathIcon Data="{StaticResource Icon.Info}" />
-                                <TextBlock Text="Khi chương trình bắt đầu, tool đổi giá bán của sản phẩm trên KiotViet thành giá đã giảm; khi kết thúc, tool trả lại giá gốc. Thu ngân bán hàng như bình thường." />
+                                <TextBlock Text="Trong thời gian chương trình, máy thu ngân tự trừ tiền giảm vào ô Giảm giá khi bấm Thanh toán. Giá bán trên KiotViet không đổi; thu ngân bán hàng như bình thường." />
                             </DockPanel>
                         </Border>
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using KiotVietTool.Application.Common;
+using KiotVietTool.Application.DTOs;
 using KiotVietTool.Domain.Enums;
 
 namespace KiotVietTool.Desktop.Models;
@@ -19,17 +20,22 @@ public static class DisplayFormat
     public static string DiscountValue(DiscountEnum type, decimal value) =>
         type == DiscountEnum.Percent ? value.ToString("0.##", Vietnamese) + "%" : Money(value);
 
-    public static string Status(ProgramStatusEnum status) => status switch
+    public static string Phase(ProgramPhaseEnum phase) => phase switch
     {
-        ProgramStatusEnum.Draft => "Nháp",
-        ProgramStatusEnum.Scheduled => "Đã lên lịch",
-        ProgramStatusEnum.Applying => "Đang áp giá",
-        ProgramStatusEnum.Running => "Đang chạy",
-        ProgramStatusEnum.ApplyFailed => "Lỗi áp giá",
-        ProgramStatusEnum.Restoring => "Đang trả giá",
-        ProgramStatusEnum.RestoreFailed => "Lỗi trả giá",
-        ProgramStatusEnum.Ended => "Đã kết thúc",
-        ProgramStatusEnum.Stopped => "Đã dừng",
-        _ => status.ToString(),
+        ProgramPhaseEnum.Draft => "Nháp",
+        ProgramPhaseEnum.Upcoming => "Sắp diễn ra",
+        ProgramPhaseEnum.Live => "Đang chạy",
+        ProgramPhaseEnum.Ended => "Đã kết thúc",
+        ProgramPhaseEnum.Stopped => "Đã dừng",
+        _ => phase.ToString(),
+    };
+
+    public static string? FeedWarning(DiscountFeedStatusDto status) => status switch
+    {
+        { IsConfigured: false } =>
+            "Chưa cấu hình kết nối tới máy thu ngân (mục DiscountFeed trong appsettings.json), nên chưa áp dụng được chương trình.",
+        { LastError: { } error } =>
+            $"Chưa gửi được danh sách giảm giá mới nhất tới máy thu ngân: {error} Tool tự gửi lại mỗi phút.",
+        _ => null,
     };
 }

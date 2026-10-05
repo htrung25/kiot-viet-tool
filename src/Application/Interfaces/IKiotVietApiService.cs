@@ -5,11 +5,7 @@ namespace KiotVietTool.Application.Interfaces;
 
 public interface IKiotVietApiService
 {
-    int PriceBatchSize { get; }
     Task SyncClockAsync(CancellationToken cancellationToken);
-    Task<IReadOnlyDictionary<long, decimal>> GetBasePricesAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken);
-    Task UpdateBasePricesAsync(KiotVietCredentialsDto credentials, IReadOnlyList<ProductPriceUpdateDto> prices, CancellationToken cancellationToken);
-    Task UpdateBasePriceAsync(KiotVietCredentialsDto credentials, ProductPriceUpdateDto price, CancellationToken cancellationToken);
     Task<int> CountProductsAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken);
     Task<IReadOnlyList<Category>> GetCategoriesAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken);
     Task<KiotVietPageDto<Product>> GetProductsPageAsync(KiotVietCredentialsDto credentials, DateTime? modifiedFromUtc,

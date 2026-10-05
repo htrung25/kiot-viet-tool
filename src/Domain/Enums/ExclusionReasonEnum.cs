@@ -11,5 +11,4 @@ public enum ExclusionReasonEnum
     NotBaseUnit = 7,
     ManuallyExcluded = 8,
     InvalidDiscountedPrice = 9,
-    DiscountTooSmall = 10,
 }

@@ -15,7 +15,6 @@ internal sealed class DiscountProgramConfiguration : IEntityTypeConfiguration<Di
         builder.Property(p => p.Note).HasMaxLength(DiscountProgram.NoteMaxLength);
         builder.Property(p => p.Value).HasConversion<string>();
         builder.Property(p => p.Type).HasConversion<int>();
-        builder.Property(p => p.Rounding).HasConversion<int>();
         builder.Property(p => p.Scope).HasConversion<int>();
         builder.Property(p => p.UnitScope).HasConversion<int>();
         builder.Property(p => p.Status).HasConversion<int>();

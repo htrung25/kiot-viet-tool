@@ -1,10 +1,12 @@
 using KiotVietTool.Application.Common.Pagination;
 using KiotVietTool.Application.DTOs;
 using KiotVietTool.Application.Interfaces;
+using KiotVietTool.Domain.Entities;
 
 namespace KiotVietTool.Application.Services;
 
-internal sealed class CatalogService(ICatalogRepository catalog) : ICatalogService
+internal sealed class CatalogService(ICatalogRepository catalog, IDiscountProgramService programs, TimeProvider timeProvider)
+    : ICatalogService
 {
     public async Task<IReadOnlyList<CategoryDto>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
         [.. (await catalog.GetCategoriesAsync(cancellationToken)).Select(c => new CategoryDto(c.Id, c.Name, c.ParentId))];
@@ -18,7 +20,20 @@ internal sealed class CatalogService(ICatalogRepository catalog) : ICatalogServi
             var categories = await catalog.GetCategoriesAsync(cancellationToken);
             categoryIds = WithDescendants(rootId, categories.ToLookup(c => c.ParentId, c => c.Id));
         }
-        return await catalog.GetProductsAsync(filter, categoryIds, page, cancellationToken);
+        var result = await catalog.GetProductsAsync(filter, categoryIds, page, cancellationToken);
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        var live = (await programs.GetFeedProgramsAsync(cancellationToken))
+            .Where(p => p.StartAtUtc <= now)
+            .SelectMany(p => p.ProductIds.Select(id => (id, p)))
+            .DistinctBy(x => x.id)
+            .ToDictionary(x => x.id, x => x.p);
+        return result.Map(product => live.TryGetValue(product.Id, out var p)
+            ? product with
+            {
+                DiscountProgramName = p.Name,
+                DiscountedPrice = DiscountProgram.CalculateDiscountedPrice(product.BasePrice, p.Type, p.Value),
+            }
+            : product);
     }
 
     public Task<IReadOnlyList<PriceBookDto>> GetPriceBooksAsync(CancellationToken cancellationToken = default) =>

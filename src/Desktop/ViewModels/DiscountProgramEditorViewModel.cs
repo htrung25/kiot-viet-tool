@@ -34,7 +34,6 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
         _notifications = notifications;
         ScopeProducts = new ProductPickerViewModel(catalog, "Tìm theo mã hoặc tên hàng để thêm", "Chưa chọn sản phẩm nào.");
         ExcludedProducts = new ProductPickerViewModel(catalog, "Tìm sản phẩm cần loại trừ", "Không loại trừ sản phẩm nào.");
-        SelectedRounding = RoundingOptions[^1];
         SelectedPreviewFilter = PreviewFilterOptions[0];
         var now = NowVietnam;
         var nextHour = now.Date.AddHours(now.Hour + 1);
@@ -45,14 +44,6 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
 
     public ProductPickerViewModel ScopeProducts { get; }
     public ProductPickerViewModel ExcludedProducts { get; }
-
-    public IReadOnlyList<FilterOption<RoundingEnum>> RoundingOptions { get; } =
-    [
-        new("Không làm tròn", RoundingEnum.None),
-        new("Làm tròn xuống 100 ₫", RoundingEnum.Down100),
-        new("Làm tròn xuống 500 ₫", RoundingEnum.Down500),
-        new("Làm tròn xuống 1.000 ₫", RoundingEnum.Down1000),
-    ];
 
     public IReadOnlyList<FilterOption<int>> PreviewFilterOptions { get; } =
     [
@@ -80,7 +71,6 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     public partial bool IsPercent { get; set; } = true;
 
     [ObservableProperty] public partial string ValueText { get; set; } = "";
-    [ObservableProperty] public partial FilterOption<RoundingEnum>? SelectedRounding { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationText))]
@@ -160,7 +150,7 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
     public string ConflictText => $"{Preview?.ConflictCount} sản phẩm đang thuộc chương trình khác trong cùng thời gian. Loại trừ các sản phẩm này ở bước Phạm vi hoặc chọn thời gian khác.";
     public bool HasOverlappingPriceBooks => Preview?.OverlappingPriceBooks.Count > 0;
     public string OverlappingText => Preview is { } p
-        ? "Sản phẩm đang nằm trong bảng giá KiotViet khác có thời gian chồng lấn; nếu thu ngân chọn bảng giá đó, màn bán hàng sẽ không hiện giá giảm: "
+        ? "Sản phẩm đang nằm trong bảng giá KiotViet khác có thời gian chồng lấn; nếu thu ngân chọn bảng giá đó, tiền giảm vẫn tính theo % trên giá của bảng giá đó: "
           + string.Join(", ", p.OverlappingPriceBooks.Select(b => $"{b.Name} ({b.ProductCount} SP)"))
         : "";
     public int HighDiscountCount => Preview?.Rows.Count(r => r.HasHighDiscount) ?? 0;
@@ -189,7 +179,6 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
         ValueText = IsPercent
             ? existing.Value.ToString("0.##", DisplayFormat.Vietnamese)
             : existing.Value.ToString("#,##0", DisplayFormat.Vietnamese);
-        SelectedRounding = RoundingOptions.FirstOrDefault(o => o.Value == existing.Rounding) ?? RoundingOptions[^1];
         IsStartNow = existing.StartMode == StartModeEnum.Immediately;
         if (existing.StartAtUtc is { } startAt)
         {
@@ -330,7 +319,7 @@ public sealed partial class DiscountProgramEditorViewModel : ViewModelBase
             if (!IsStartNow) startAtUtc = VietnamTime.ToUtc(Combine(StartDate, StartTime)!.Value);
             var scope = scopeOverride ?? (IsScopeCategories ? ScopeEnum.Categories : IsScopeProducts ? ScopeEnum.Products : ScopeEnum.AllProducts);
             return new SaveDiscountProgramDto(_programId, Name, IsPercent ? DiscountEnum.Percent : DiscountEnum.Amount, value,
-                SelectedRounding?.Value ?? RoundingEnum.Down1000, IsStartNow ? StartModeEnum.Immediately : StartModeEnum.Scheduled,
+                IsStartNow ? StartModeEnum.Immediately : StartModeEnum.Scheduled,
                 startAtUtc, VietnamTime.ToUtc(end), scope,
                 [.. Categories.Where(c => c.IsSelected).Select(c => c.Id)], ScopeProducts.SelectedIds, ExcludedProducts.SelectedIds,
                 BaseUnitOnly ? UnitScopeEnum.BaseUnitOnly : UnitScopeEnum.AllUnits, Note);

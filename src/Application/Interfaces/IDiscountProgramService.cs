@@ -10,6 +10,7 @@ public interface IDiscountProgramService
     Task<Result<DiscountPreviewDto>> PreviewAsync(SaveDiscountProgramDto request, CancellationToken cancellationToken = default);
     Task<Result<DiscountPreviewDto>> PreviewSavedAsync(int programId, CancellationToken cancellationToken = default);
     Task<DiscountProgramDetailDto?> GetDetailAsync(int programId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DiscountFeedProgramDto>> GetFeedProgramsAsync(CancellationToken cancellationToken = default);
     Task<Result<int>> SaveAsync(SaveDiscountProgramDto request, CancellationToken cancellationToken = default);
     Task<Result<SaveDiscountProgramDto>> DuplicateAsync(int id, CancellationToken cancellationToken = default);
     Task<Result> DeleteAsync(int id, CancellationToken cancellationToken = default);

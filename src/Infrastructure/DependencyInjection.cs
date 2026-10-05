@@ -35,9 +35,16 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(KiotVietOptions.SectionName))
             .Validate(o => Uri.TryCreate(o.TokenUrl, UriKind.Absolute, out _) && Uri.TryCreate(o.ApiBaseUrl, UriKind.Absolute, out _),
                 $"{KiotVietOptions.SectionName}:TokenUrl and ApiBaseUrl must be absolute URLs.")
-            .Validate(o => o.RequestTimeoutSeconds > 0 && o.MaxGetRequestsPerHour > 0 && o.MaxRetries >= 0
-                && o.PriceUpdateBatchSize is >= 1 and <= 100 && o.MinWriteIntervalMs >= 0,
+            .Validate(o => o.RequestTimeoutSeconds > 0 && o.MaxGetRequestsPerHour > 0 && o.MaxRetries >= 0,
                 $"{KiotVietOptions.SectionName}: timeout, rate limit and retries must be positive.")
+            .ValidateOnStart();
+
+        services.AddOptions<DiscountFeedOptions>()
+            .Bind(configuration.GetSection(DiscountFeedOptions.SectionName))
+            .Validate(o => string.IsNullOrWhiteSpace(o.Url) || (Uri.TryCreate(o.Url, UriKind.Absolute, out var url)
+                    && (url.Scheme == Uri.UriSchemeHttps || url.IsLoopback) && !string.IsNullOrWhiteSpace(o.WriteToken)),
+                $"{DiscountFeedOptions.SectionName}: Url must be an https URL (http only for localhost) and WriteToken is required when Url is set.")
+            .Validate(o => o.RequestTimeoutSeconds > 0, $"{DiscountFeedOptions.SectionName}:RequestTimeoutSeconds must be positive.")
             .ValidateOnStart();
 
         services.AddOptions<TelegramOptions>()
@@ -60,9 +67,7 @@ public static class DependencyInjection
         services.AddTransient<IKiotVietConnectionRepository, KiotVietConnectionRepository>();
         services.AddTransient<ICatalogRepository, CatalogRepository>();
         services.AddTransient<IDiscountProgramRepository, DiscountProgramRepository>();
-        services.AddTransient<IProgramPriceRepository, ProgramPriceRepository>();
-        services.AddTransient<IDatabaseBackupService, SqliteBackupService>();
-        services.AddSingleton<ITaskSchedulerService, WindowsTaskSchedulerService>();
+        services.AddSingleton<IDiscountFeedApiService, DiscountFeedApiService>();
         services.AddSingleton<ITelegramApiService, TelegramApiService>();
         services.AddSingleton<IOneTimeCodeService, OneTimeCodeService>();
         services.AddTransient<ITelegramConnectionRepository, TelegramConnectionRepository>();

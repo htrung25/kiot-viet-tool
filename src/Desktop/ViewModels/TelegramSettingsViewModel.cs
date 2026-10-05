@@ -23,11 +23,8 @@ public sealed partial class TelegramSettingsViewModel(ITelegramService telegram,
 
     public IReadOnlyList<NotificationEventChoice> Events { get; } =
     [
-        new("Đã áp giá giảm", "Chương trình bắt đầu, giá bán trên KiotViet đã đổi.", true),
-        new("Đã trả giá gốc", "Chương trình kết thúc hoặc bị dừng, giá đã về giá gốc.", true),
-        new("Lỗi áp giá / trả giá", "Có sản phẩm chưa đổi được giá, cần bấm Thử lại.", true),
-        new("Quá hạn chưa trả giá", "Đã qua giờ kết thúc nhưng giá giảm vẫn còn trên KiotViet.", true),
-        new("Giá bị sửa tay trên KiotViet", "Tool không ghi đè, cần chọn giữ giá hay trả về giá gốc.", true),
+        new("Chương trình bắt đầu / kết thúc", "Máy thu ngân bắt đầu hoặc ngừng giảm giá.", true),
+        new("Không gửi được tới máy thu ngân", "Danh sách giảm giá mới chưa tới được máy thu ngân.", true),
         new("Đồng bộ thất bại", "Không đồng bộ được sản phẩm / bảng giá từ KiotViet.", false),
     ];
 

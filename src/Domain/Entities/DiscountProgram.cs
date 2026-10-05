@@ -15,7 +15,6 @@ public sealed class DiscountProgram
     public string Name { get; private set; } = "";
     public DiscountEnum Type { get; private set; }
     public decimal Value { get; private set; }
-    public RoundingEnum Rounding { get; private set; }
     public StartModeEnum StartMode { get; private set; }
     public DateTime? StartAtUtc { get; private set; }
     public DateTime EndAtUtc { get; private set; }
@@ -26,34 +25,32 @@ public sealed class DiscountProgram
     public UnitScopeEnum UnitScope { get; private set; }
     public string? Note { get; private set; }
     public ProgramStatusEnum Status { get; private set; }
-    public bool IsStopRequested { get; private set; }
     public DateTime? FinishedAtUtc { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
 
     private DiscountProgram() { } // EF Core
 
-    public static DiscountProgram Create(string name, DiscountEnum type, decimal value, RoundingEnum rounding,
+    public static DiscountProgram Create(string name, DiscountEnum type, decimal value,
         StartModeEnum startMode, DateTime? startAtUtc, DateTime endAtUtc, ScopeEnum scope, IEnumerable<int> categoryIds,
         IEnumerable<long> productIds, IEnumerable<long> excludedProductIds, UnitScopeEnum unitScope, string? note, DateTime nowUtc)
     {
         var program = new DiscountProgram { Status = ProgramStatusEnum.Draft, CreatedAtUtc = nowUtc };
-        program.Update(name, type, value, rounding, startMode, startAtUtc, endAtUtc, scope, categoryIds, productIds,
+        program.Update(name, type, value, startMode, startAtUtc, endAtUtc, scope, categoryIds, productIds,
             excludedProductIds, unitScope, note, nowUtc);
         return program;
     }
 
-    public void Update(string name, DiscountEnum type, decimal value, RoundingEnum rounding, StartModeEnum startMode,
+    public void Update(string name, DiscountEnum type, decimal value, StartModeEnum startMode,
         DateTime? startAtUtc, DateTime endAtUtc, ScopeEnum scope, IEnumerable<int> categoryIds, IEnumerable<long> productIds,
         IEnumerable<long> excludedProductIds, UnitScopeEnum unitScope, string? note, DateTime nowUtc)
     {
         if (!IsEditable)
-            throw new DomainException("Chỉ sửa được toàn bộ thông tin khi chương trình còn là nháp hoặc chưa tới giờ bắt đầu.");
+            throw new DomainException("Chỉ sửa được toàn bộ thông tin khi chương trình còn là nháp.");
 
         name = name.Trim();
         EnsureValidName(name);
         EnsureValidValue(type, value);
-        if (!Enum.IsDefined(rounding)) throw new DomainException("Kiểu làm tròn không hợp lệ.");
         if (!Enum.IsDefined(unitScope)) throw new DomainException("Đơn vị tính áp dụng không hợp lệ.");
         startAtUtc = startMode == StartModeEnum.Scheduled && startAtUtc is { } start ? TruncateToMinute(start) : null;
         endAtUtc = TruncateToMinute(endAtUtc);
@@ -87,7 +84,6 @@ public sealed class DiscountProgram
         Name = name;
         Type = type;
         Value = value;
-        Rounding = rounding;
         StartMode = startMode;
         StartAtUtc = startAtUtc;
         EndAtUtc = endAtUtc;
@@ -102,91 +98,59 @@ public sealed class DiscountProgram
 
     public bool IsDraft => Status == ProgramStatusEnum.Draft;
 
-    public bool IsEditable => Status is ProgramStatusEnum.Draft or ProgramStatusEnum.Scheduled;
+    public bool IsEditable => IsDraft;
 
-    public bool IsFinished => Status is ProgramStatusEnum.Ended or ProgramStatusEnum.Stopped;
-
-    public bool HoldsKiotVietPrices => Status is ProgramStatusEnum.Applying or ProgramStatusEnum.Running
-        or ProgramStatusEnum.ApplyFailed or ProgramStatusEnum.Restoring or ProgramStatusEnum.RestoreFailed;
+    public bool IsPublished => Status == ProgramStatusEnum.Published;
 
     public DateTime EffectiveStartAt(DateTime nowUtc) => StartAtUtc ?? nowUtc;
 
     public bool IsEndedAt(DateTime nowUtc) => EndAtUtc <= nowUtc;
 
-    public bool IsOverdueAt(DateTime nowUtc) => HoldsKiotVietPrices && IsEndedAt(nowUtc);
+    public bool IsFinishedAt(DateTime nowUtc) => Status == ProgramStatusEnum.Stopped || (IsPublished && IsEndedAt(nowUtc));
+
+    public bool IsLiveAt(DateTime nowUtc) => IsPublished && EffectiveStartAt(nowUtc) <= nowUtc && !IsEndedAt(nowUtc);
+
+    public ProgramPhaseEnum PhaseAt(DateTime nowUtc) => Status switch
+    {
+        ProgramStatusEnum.Draft => ProgramPhaseEnum.Draft,
+        ProgramStatusEnum.Stopped => ProgramPhaseEnum.Stopped,
+        _ when IsEndedAt(nowUtc) => ProgramPhaseEnum.Ended,
+        _ when EffectiveStartAt(nowUtc) > nowUtc => ProgramPhaseEnum.Upcoming,
+        _ => ProgramPhaseEnum.Live,
+    };
 
     public bool OverlapsWith(DateTime startUtc, DateTime endUtc, DateTime nowUtc) =>
         EffectiveStartAt(nowUtc) < endUtc && startUtc < EndAtUtc;
 
-    public bool IsStartDueAt(DateTime nowUtc) => Status == ProgramStatusEnum.Scheduled && StartAtUtc <= nowUtc;
-
-    public void Schedule(DateTime nowUtc)
+    public void Publish(DateTime nowUtc)
     {
-        if (Status != ProgramStatusEnum.Draft) throw new DomainException("Chỉ lên lịch được chương trình nháp.");
-        if (StartMode != StartModeEnum.Scheduled || StartAtUtc is not { } start || start <= nowUtc)
-            throw new DomainException("Chương trình không có giờ bắt đầu trong tương lai để lên lịch.");
-        Status = ProgramStatusEnum.Scheduled;
-        UpdatedAtUtc = nowUtc;
-    }
-
-    public void Unschedule(DateTime nowUtc)
-    {
-        if (Status != ProgramStatusEnum.Scheduled) throw new DomainException("Chương trình không ở trạng thái đã lên lịch.");
-        Status = ProgramStatusEnum.Draft;
-        UpdatedAtUtc = nowUtc;
-    }
-
-    public void BeginApplying(DateTime nowUtc)
-    {
-        if (Status is not (ProgramStatusEnum.Draft or ProgramStatusEnum.Scheduled or ProgramStatusEnum.Applying or ProgramStatusEnum.ApplyFailed))
-            throw new DomainException("Chương trình không ở trạng thái có thể áp giá.");
-        if (IsEndedAt(nowUtc)) throw new DomainException("Chương trình đã quá thời điểm kết thúc, không áp giá nữa.");
-        if (StartAtUtc is { } start && start > nowUtc) throw new DomainException("Chưa tới giờ bắt đầu chương trình.");
+        if (!IsDraft) throw new DomainException("Chỉ áp dụng được chương trình nháp.");
+        if (IsEndedAt(nowUtc)) throw new DomainException("Chương trình đã quá thời điểm kết thúc.");
         StartAtUtc ??= TruncateToMinute(nowUtc);
-        Status = ProgramStatusEnum.Applying;
+        Status = ProgramStatusEnum.Published;
         UpdatedAtUtc = nowUtc;
     }
 
-    public void FinishApplying(bool allSucceeded, DateTime nowUtc)
+    public void Stop(DateTime nowUtc)
     {
-        if (Status != ProgramStatusEnum.Applying) throw new DomainException("Chương trình không ở trạng thái đang áp giá.");
-        Status = allSucceeded ? ProgramStatusEnum.Running : ProgramStatusEnum.ApplyFailed;
-        UpdatedAtUtc = nowUtc;
-    }
-
-    public void BeginRestoring(bool stopEarly, DateTime nowUtc)
-    {
-        if (!HoldsKiotVietPrices) throw new DomainException("Chương trình không giữ giá giảm nào trên KiotViet.");
-        if (stopEarly) IsStopRequested = true;
-        Status = ProgramStatusEnum.Restoring;
-        UpdatedAtUtc = nowUtc;
-    }
-
-    public void FinishRestoring(bool allSucceeded, DateTime nowUtc)
-    {
-        if (Status != ProgramStatusEnum.Restoring) throw new DomainException("Chương trình không ở trạng thái đang trả giá.");
-        UpdatedAtUtc = nowUtc;
-        if (!allSucceeded)
+        if (!IsPublished || IsEndedAt(nowUtc)) throw new DomainException("Chương trình không còn đang áp dụng.");
+        if (StartAtUtc > nowUtc)
         {
-            Status = ProgramStatusEnum.RestoreFailed;
-            return;
+            Status = ProgramStatusEnum.Draft;
+            if (StartMode == StartModeEnum.Immediately) StartAtUtc = null;
         }
-        Status = IsStopRequested ? ProgramStatusEnum.Stopped : ProgramStatusEnum.Ended;
-        FinishedAtUtc = nowUtc;
-    }
-
-    public void EndWithoutApplying(DateTime nowUtc)
-    {
-        if (Status != ProgramStatusEnum.Scheduled) throw new DomainException("Chương trình không ở trạng thái đã lên lịch.");
-        Status = ProgramStatusEnum.Ended;
-        FinishedAtUtc = nowUtc;
+        else
+        {
+            Status = ProgramStatusEnum.Stopped;
+            FinishedAtUtc = nowUtc;
+        }
         UpdatedAtUtc = nowUtc;
     }
 
     public void ChangeEnd(DateTime endAtUtc, DateTime nowUtc)
     {
-        if (Status is not (ProgramStatusEnum.Scheduled or ProgramStatusEnum.Running or ProgramStatusEnum.ApplyFailed))
-            throw new DomainException("Chỉ đổi được thời điểm kết thúc khi chương trình đã lên lịch hoặc đang chạy.");
+        if (!IsPublished || IsEndedAt(nowUtc))
+            throw new DomainException("Chỉ đổi được thời điểm kết thúc khi chương trình đang áp dụng.");
         endAtUtc = TruncateToMinute(endAtUtc);
         var start = EffectiveStartAt(nowUtc);
         if (endAtUtc <= nowUtc || endAtUtc - start < MinDuration)
@@ -199,7 +163,7 @@ public sealed class DiscountProgram
     public void EnsureCanDelete()
     {
         if (!IsEditable)
-            throw new DomainException("Chỉ xoá được chương trình chưa áp giá lên KiotViet. Chương trình đã áp giá hãy dùng Dừng chương trình.");
+            throw new DomainException("Chỉ xoá được chương trình nháp. Chương trình đã áp dụng hãy dùng Dừng chương trình.");
     }
 
     public PriceQuote Quote(Product product)
@@ -213,18 +177,13 @@ public sealed class DiscountProgram
         if (product.BasePrice <= 0) return PriceQuote.Excluded(ExclusionReasonEnum.NoBasePrice);
         if (ExcludedProductIds.Contains(product.Id)) return PriceQuote.Excluded(ExclusionReasonEnum.ManuallyExcluded);
 
-        var price = CalculateDiscountedPrice(product.BasePrice, Type, Value, Rounding);
+        var price = CalculateDiscountedPrice(product.BasePrice, Type, Value);
         if (price <= 0) return PriceQuote.Excluded(ExclusionReasonEnum.InvalidDiscountedPrice);
-        if (price >= product.BasePrice) return PriceQuote.Excluded(ExclusionReasonEnum.DiscountTooSmall);
         return new PriceQuote(price, null);
     }
 
-    public static decimal CalculateDiscountedPrice(decimal basePrice, DiscountEnum type, decimal value, RoundingEnum rounding)
-    {
-        var raw = type == DiscountEnum.Percent ? basePrice * (1 - value / 100m) : basePrice - value;
-        var step = rounding == RoundingEnum.None ? 1m : (decimal)(int)rounding;
-        return Math.Floor(raw / step) * step;
-    }
+    public static decimal CalculateDiscountedPrice(decimal price, DiscountEnum type, decimal value) =>
+        type == DiscountEnum.Percent ? price * (1 - value / 100m) : price - value;
 
     public static void EnsureValidName(string name)
     {

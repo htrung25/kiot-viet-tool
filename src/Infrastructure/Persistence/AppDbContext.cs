@@ -14,7 +14,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<PriceBook> PriceBooks => Set<PriceBook>();
     public DbSet<PriceBookItem> PriceBookItems => Set<PriceBookItem>();
     public DbSet<DiscountProgram> DiscountPrograms => Set<DiscountProgram>();
-    public DbSet<ProgramProductPrice> ProgramProductPrices => Set<ProgramProductPrice>();
     public DbSet<TelegramConnection> TelegramConnections => Set<TelegramConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>

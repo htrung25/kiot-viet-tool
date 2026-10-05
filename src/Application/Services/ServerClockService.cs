@@ -49,6 +49,4 @@ internal sealed class ServerClockService(TimeProvider machineClock, ILogger<Serv
             previous, offset);
         OffsetChanged?.Invoke(this, EventArgs.Empty);
     }
-
-    public DateTime ToMachineUtc(DateTime serverUtc) => serverUtc - Offset;
 }

@@ -4,7 +4,7 @@
              xmlns:models="using:KiotVietTool.Desktop.Models"
              x:Class="KiotVietTool.Desktop.Views.DiscountProgramListView"
              x:DataType="vm:DiscountProgramListViewModel">
-    <Grid Classes="page" RowDefinitions="Auto,*" RowSpacing="20">
+    <Grid Classes="page" RowDefinitions="Auto,Auto,*" RowSpacing="20">
         <DockPanel>
             <Button DockPanel.Dock="Right" Classes="accent" VerticalAlignment="Center" Command="{Binding CreateCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -14,11 +14,19 @@
             </Button>
             <StackPanel Spacing="4">
                 <TextBlock Text="Chương trình giảm giá" Classes="h1" />
-                <TextBlock Text="Giảm giá có thời hạn theo % hoặc số tiền; tool tự đổi giá bán trên KiotViet khi bắt đầu và trả giá gốc khi kết thúc." Classes="subtitle" />
+                <TextBlock Text="Giảm giá có thời hạn theo % hoặc số tiền. Giá bán trên KiotViet giữ nguyên; máy thu ngân tự trừ tiền giảm khi bấm Thanh toán." Classes="subtitle" TextWrapping="Wrap" />
             </StackPanel>
         </DockPanel>
 
-        <Border Grid.Row="1" Classes="card">
+        <Border Grid.Row="1" Classes="alert warning"
+                IsVisible="{Binding FeedWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <DockPanel>
+                <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                <TextBlock Text="{Binding FeedWarning}" />
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Row="2" Classes="card">
             <Grid RowDefinitions="Auto,Auto,*">
                 <WrapPanel Margin="16,14,6,4">
                     <ComboBox Width="200" Margin="0,0,16,10" ItemsSource="{Binding StatusOptions}"

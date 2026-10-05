@@ -21,7 +21,6 @@ public sealed class SingleInstanceService : IDisposable
 
     /// <summary>Returns null if another instance is running (after signalling it to activate).</summary>
     public const string ActivateMessage = "activate";
-    public const string RunDueMessage = "run-due";
 
     public static SingleInstanceService? TryAcquire(string id, string message = ActivateMessage)
     {

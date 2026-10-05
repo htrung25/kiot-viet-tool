@@ -7,7 +7,6 @@ public sealed record SaveDiscountProgramDto(
     string Name,
     DiscountEnum Type,
     decimal Value,
-    RoundingEnum Rounding,
     StartModeEnum StartMode,
     DateTime? StartAtUtc,
     DateTime EndAtUtc,

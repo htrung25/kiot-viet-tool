@@ -40,8 +40,6 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
     readonly ILogger<KiotVietApiService> _logger;
     readonly Queue<DateTime> _recentGets = new();
     readonly SemaphoreSlim _getLock = new(1, 1);
-    readonly SemaphoreSlim _writeLock = new(1, 1);
-    DateTimeOffset _lastWrite = DateTimeOffset.MinValue;
     readonly SemaphoreSlim _tokenLock = new(1, 1);
     CachedToken? _token;
     bool _missingTypeLogged;
@@ -106,35 +104,10 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
         [.. (await GetAllAsync<PriceBookItemJson>(credentials, $"/pricebooks/{priceBookId}?", cancellationToken))
             .Select(i => PriceBookItem.Create(priceBookId, i.ProductId, i.Price))];
 
-    public int PriceBatchSize => _options.PriceUpdateBatchSize;
-
-    public async Task<IReadOnlyDictionary<long, decimal>> GetBasePricesAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken)
-    {
-        var prices = new Dictionary<long, decimal>();
-        while (true)
-        {
-            var page = await GetAsync<PageJson<ProductJson>>(credentials,
-                $"/products?pageSize={PageSize}&currentItem={prices.Count}", cancellationToken);
-            var data = page.Data ?? [];
-            foreach (var product in data) prices[product.Id] = product.BasePrice ?? 0;
-            if (data.Count == 0 || prices.Count >= page.Total) return prices;
-        }
-    }
-
-    public Task UpdateBasePricesAsync(KiotVietCredentialsDto credentials, IReadOnlyList<ProductPriceUpdateDto> prices,
-        CancellationToken cancellationToken) =>
-        SendAuthorizedAsync<JsonElement>(credentials, HttpMethod.Put, "/listupdatedproducts",
-            new { listProducts = prices.Select(p => new { id = p.ProductId, basePrice = p.BasePrice }) }, cancellationToken);
-
-    public Task UpdateBasePriceAsync(KiotVietCredentialsDto credentials, ProductPriceUpdateDto price, CancellationToken cancellationToken) =>
-        SendAuthorizedAsync<JsonElement>(credentials, HttpMethod.Put, $"/products/{price.ProductId}",
-            new { basePrice = price.BasePrice }, cancellationToken);
-
     public void Dispose()
     {
         _http.Dispose();
         _getLock.Dispose();
-        _writeLock.Dispose();
         _tokenLock.Dispose();
     }
 
@@ -173,27 +146,20 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
         }
     }
 
-    Task<T> GetAsync<T>(KiotVietCredentialsDto credentials, string pathAndQuery, CancellationToken cancellationToken) =>
-        SendAuthorizedAsync<T>(credentials, HttpMethod.Get, pathAndQuery, null, cancellationToken);
-
-    async Task<T> SendAuthorizedAsync<T>(KiotVietCredentialsDto credentials, HttpMethod method, string pathAndQuery, object? body,
-        CancellationToken cancellationToken)
+    async Task<T> GetAsync<T>(KiotVietCredentialsDto credentials, string pathAndQuery, CancellationToken cancellationToken)
     {
         var url = _options.ApiBaseUrl.TrimEnd('/') + pathAndQuery;
-        var isGet = method == HttpMethod.Get;
         var forceNewToken = false;
         while (true)
         {
             var token = await GetTokenAsync(credentials, forceNewToken, cancellationToken);
-            if (!isGet) await WaitForWriteSlotAsync(cancellationToken);
             using var response = await SendAsync(() =>
             {
-                var request = new HttpRequestMessage(method, url);
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("Retailer", credentials.Retailer);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                if (body is not null) request.Content = JsonContent.Create(body, options: Json);
                 return request;
-            }, isGet, cancellationToken);
+            }, isGet: true, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.Unauthorized && !forceNewToken)
             {
@@ -299,21 +265,6 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
         }
     }
 
-    async Task WaitForWriteSlotAsync(CancellationToken cancellationToken)
-    {
-        await _writeLock.WaitAsync(cancellationToken);
-        try
-        {
-            var wait = _lastWrite + TimeSpan.FromMilliseconds(_options.MinWriteIntervalMs) - _timeProvider.GetUtcNow();
-            if (wait > TimeSpan.Zero) await Task.Delay(wait, _timeProvider, cancellationToken);
-            _lastWrite = _timeProvider.GetUtcNow();
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
-
     async Task WaitForGetSlotAsync(CancellationToken cancellationToken)
     {
         await _getLock.WaitAsync(cancellationToken);
@@ -352,9 +303,8 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
                 $"Không truy cập được gian hàng \"{retailer}\". Kiểm tra lại tên Retailer và gian hàng đã bật Thiết lập kết nối API (Thiết lập cửa hàng → Thiết lập kết nối API)."),
             _ when status >= 500 => new KiotVietApiException(ServerErrorMessage),
             _ when body.Contains("retailer", StringComparison.OrdinalIgnoreCase) => new KiotVietApiException(
-                "Không tìm thấy gian hàng. Kiểm tra lại tên Retailer.", statusCode: status),
-            _ => new KiotVietApiException($"KiotViet từ chối yêu cầu (mã {status}). Chi tiết đã được ghi vào file log.",
-                statusCode: status),
+                "Không tìm thấy gian hàng. Kiểm tra lại tên Retailer."),
+            _ => new KiotVietApiException($"KiotViet từ chối yêu cầu (mã {status}). Chi tiết đã được ghi vào file log."),
         };
     }
 

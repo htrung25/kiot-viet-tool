@@ -1,0 +1,17 @@
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "kiot-viet-discount-feed",
+	"main": "discount-feed.js",
+	"compatibility_date": "2026-10-01",
+	"workers_dev": true,
+	"observability": {
+		"enabled": true
+	},
+	"kv_namespaces": [
+		{
+			"binding": "FEED",
+			"id": "86d05021489a422ea6d9ba21055f6b93",
+			"remote": true
+		}
+	]
+}

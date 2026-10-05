@@ -12,5 +12,4 @@ public sealed record DiscountProgramListItemDto(
     DateTime EndAtUtc,
     ScopeEnum Scope,
     int ScopeItemCount,
-    ProgramStatusEnum Status,
-    bool IsOverdue);
+    ProgramPhaseEnum Phase);

@@ -18,7 +18,7 @@ public sealed record DiscountProgramItem(DiscountProgramListItemDto Program)
         ScopeEnum.Products => $"{Program.ScopeItemCount} sản phẩm",
         _ => "Toàn bộ sản phẩm",
     };
-    public string StatusText => Program.IsOverdue ? "Quá hạn — chưa trả giá" : DisplayFormat.Status(Program.Status);
-    public bool IsEditable => Program.Status is ProgramStatusEnum.Draft or ProgramStatusEnum.Scheduled;
-    public bool IsActiveStatus => !Program.IsOverdue && Program.Status is ProgramStatusEnum.Scheduled or ProgramStatusEnum.Running;
+    public string StatusText => DisplayFormat.Phase(Program.Phase);
+    public bool IsEditable => Program.Phase == ProgramPhaseEnum.Draft;
+    public bool IsActiveStatus => Program.Phase is ProgramPhaseEnum.Upcoming or ProgramPhaseEnum.Live;
 }

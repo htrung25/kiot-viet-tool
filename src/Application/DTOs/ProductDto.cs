@@ -13,5 +13,4 @@ public sealed record ProductDto(
     bool IsActive,
     bool AllowsSale,
     string? DiscountProgramName = null,
-    decimal? OriginalPrice = null,
     decimal? DiscountedPrice = null);

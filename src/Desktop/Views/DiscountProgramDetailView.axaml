@@ -13,8 +13,6 @@
             <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center">
                 <Button Classes="secondary" Content="Sửa" Margin="0,0,8,0" Command="{Binding EditCommand}"
                         IsVisible="{Binding CanEdit}" />
-                <Button Classes="secondary" Content="Thử lại" Margin="0,0,8,0" Command="{Binding RetryCommand}"
-                        IsVisible="{Binding CanRetry}" />
                 <Button Classes="danger" Content="{Binding StopText}" Margin="0,0,8,0" Command="{Binding StopCommand}"
                         IsVisible="{Binding CanStop}" />
                 <Button Classes="accent" Content="Áp dụng" Command="{Binding ApplyCommand}" IsVisible="{Binding CanApply}" />
@@ -62,82 +60,61 @@
                     <TextBlock Text="{Binding ErrorMessage}" />
                 </DockPanel>
             </Border>
-            <Border Classes="alert error" IsVisible="{Binding IsOverdue}">
+            <Border Classes="alert warning"
+                    IsVisible="{Binding FeedWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <DockPanel>
                     <PathIcon Data="{StaticResource Icon.AlertCircle}" />
-                    <TextBlock Text="Chương trình đã quá giờ kết thúc nhưng giá giảm vẫn đang ở trên KiotViet. Tool đang tự trả giá gốc; nếu vẫn báo lỗi, bấm Thử lại." />
+                    <TextBlock Text="{Binding FeedWarning}" />
                 </DockPanel>
             </Border>
-            <Border Classes="alert warning" IsVisible="{Binding HasManualChanges}">
-                <DockPanel>
-                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" Margin="12,0,0,0" VerticalAlignment="Center">
-                        <Button Classes="secondary" Content="Giữ giá hiện tại" Command="{Binding KeepManualChangesCommand}"
-                                IsEnabled="{Binding IsIdle}" />
-                        <Button Classes="secondary" Content="Trả về giá gốc" Command="{Binding RestoreManualChangesCommand}"
-                                IsEnabled="{Binding IsIdle}" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding ManualChangesText}" />
-                </DockPanel>
-            </Border>
-            <DockPanel IsVisible="{Binding IsBusy}">
-                <Button DockPanel.Dock="Right" Classes="secondary" Content="Huỷ" Margin="12,0,0,0" VerticalAlignment="Center"
-                        Command="{Binding CancelOperationCommand}"
-                        ToolTip.Tip="Dừng sau đợt đang ghi; phần đã ghi giữ nguyên, bấm Thử lại để làm tiếp" />
-                <StackPanel Spacing="6" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding ProgressText}" Classes="caption" />
-                    <ProgressBar Value="{Binding ProgressValue}" Maximum="100" Height="6" />
-                </StackPanel>
-            </DockPanel>
         </StackPanel>
 
         <Border Grid.Row="3" Classes="card">
             <Panel>
-                <DataGrid ItemsSource="{Binding Prices}" IsVisible="{Binding HasPrices}"
+                <DataGrid ItemsSource="{Binding Rows}" IsVisible="{Binding HasRows}"
                           AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="MÃ HÀNG" Width="100">
-                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                        <DataGridTemplateColumn Header="MÃ HÀNG" Width="112">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
                                 <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="TÊN HÀNG" Width="3*" MinWidth="150">
-                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                        <DataGridTemplateColumn Header="TÊN HÀNG" Width="3*" MinWidth="100">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
                                 <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Name}" TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="GIÁ GỐC" Width="105">
-                            <DataTemplate x:DataType="models:ProgramPriceItem">
-                                <TextBlock Text="{Binding OriginalPriceText}" VerticalAlignment="Center" />
+                        <DataGridTemplateColumn Header="ĐƠN VỊ" Width="96">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
+                                <TextBlock Text="{Binding Unit}" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="GIÁ GIẢM" Width="105">
-                            <DataTemplate x:DataType="models:ProgramPriceItem">
+                        <DataGridTemplateColumn Header="GIÁ BÁN" Width="104">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
+                                <TextBlock Text="{Binding BasePriceText}" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="SAU GIẢM" Width="116">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
                                 <TextBlock Text="{Binding DiscountedPriceText}" FontWeight="SemiBold"
                                            Foreground="{StaticResource Primary}" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="TRẠNG THÁI" Width="2*" MinWidth="150">
-                            <DataTemplate x:DataType="models:ProgramPriceItem">
-                                <StackPanel VerticalAlignment="Center" Spacing="1">
-                                    <Border Classes="badge" Classes.success="{Binding IsGood}">
-                                        <TextBlock Text="{Binding StateText}" />
-                                    </Border>
-                                    <TextBlock Text="{Binding ErrorText}" Classes="caption" TextTrimming="CharacterEllipsis"
-                                               ToolTip.Tip="{Binding ErrorText}" IsVisible="{Binding HasError}" />
-                                </StackPanel>
+                        <DataGridTemplateColumn Header="GIẢM" Width="2*" MinWidth="112">
+                            <DataTemplate x:DataType="models:PreviewRowItem">
+                                <TextBlock Text="{Binding DiscountText}" Classes="caption" VerticalAlignment="Center" />
                             </DataTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-                <StackPanel IsVisible="{Binding ShowNotAppliedHint}" VerticalAlignment="Center"
+                <StackPanel IsVisible="{Binding ShowNoRows}" VerticalAlignment="Center"
                             HorizontalAlignment="Center" Spacing="10" Margin="24,40" MaxWidth="420">
                     <Border Classes="emptyIcon">
                         <PathIcon Data="{StaticResource Icon.Tag}" />
                     </Border>
-                    <TextBlock Text="Chưa đổi giá trên KiotViet" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
-                    <TextBlock Text="Bấm Áp dụng để đổi giá bán (hoặc lên lịch nếu chương trình hẹn giờ). Danh sách sản phẩm và giá gốc hiện ở đây sau khi áp giá."
+                    <TextBlock Text="Không có sản phẩm nào được giảm" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                    <TextBlock Text="Mọi sản phẩm trong phạm vi đều bị loại. Sửa phạm vi hoặc đồng bộ lại sản phẩm từ KiotViet."
                                Classes="subtitle" TextAlignment="Center" />
                 </StackPanel>
             </Panel>

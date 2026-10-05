@@ -11,6 +11,4 @@ public interface IServerClockService
     event EventHandler? OffsetChanged;
 
     void Observe(DateTimeOffset serverTime);
-
-    DateTime ToMachineUtc(DateTime serverUtc);
 }

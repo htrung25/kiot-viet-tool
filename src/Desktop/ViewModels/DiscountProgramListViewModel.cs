@@ -10,16 +10,16 @@ namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class DiscountProgramListViewModel(
     IDiscountProgramService programs,
-    IPriceDeploymentService deployment,
+    IDiscountFeedService feed,
     INavigationService navigation,
     IDialogService dialogs,
     INotificationService notifications) : ViewModelBase
 {
     IReadOnlyList<DiscountProgramItem> _all = [];
 
-    public IReadOnlyList<FilterOption<ProgramStatusEnum?>> StatusOptions { get; } =
-        [new("Tất cả trạng thái", null), .. Enum.GetValues<ProgramStatusEnum>()
-            .Select(s => new FilterOption<ProgramStatusEnum?>(DisplayFormat.Status(s), s))];
+    public IReadOnlyList<FilterOption<ProgramPhaseEnum?>> StatusOptions { get; } =
+        [new("Tất cả trạng thái", null), .. Enum.GetValues<ProgramPhaseEnum>()
+            .Select(s => new FilterOption<ProgramPhaseEnum?>(DisplayFormat.Phase(s), s))];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPrograms), nameof(ShowNoResults))]
@@ -29,7 +29,8 @@ public sealed partial class DiscountProgramListViewModel(
     [NotifyPropertyChangedFor(nameof(ShowEmptyState), nameof(ShowNoResults))]
     public partial bool HasData { get; private set; }
 
-    [ObservableProperty] public partial FilterOption<ProgramStatusEnum?>? SelectedStatus { get; set; }
+    [ObservableProperty] public partial FilterOption<ProgramPhaseEnum?>? SelectedStatus { get; set; }
+    [ObservableProperty] public partial string? FeedWarning { get; private set; }
     [ObservableProperty] public partial bool IncludeLongEnded { get; set; }
 
     public bool HasPrograms => Programs.Count > 0;
@@ -39,15 +40,15 @@ public sealed partial class DiscountProgramListViewModel(
     public override async Task OnNavigatedToAsync(object? parameter, CancellationToken cancellationToken)
     {
         SelectedStatus = StatusOptions[0];
-        deployment.Changed += OnDeploymentChanged;
+        feed.Changed += OnFeedChanged;
         await ReloadAsync(cancellationToken);
     }
 
-    async void OnDeploymentChanged(object? sender, EventArgs e)
+    async void OnFeedChanged(object? sender, EventArgs e)
     {
         if (navigation.CurrentViewModel != this)
         {
-            deployment.Changed -= OnDeploymentChanged;
+            feed.Changed -= OnFeedChanged;
             return;
         }
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => ReloadAsync(CancellationToken.None));
@@ -57,7 +58,7 @@ public sealed partial class DiscountProgramListViewModel(
     Task OpenAsync(DiscountProgramItem item) =>
         navigation.NavigateToAsync<DiscountProgramDetailViewModel>(new ProgramDetailRequest(item.Id));
 
-    partial void OnSelectedStatusChanged(FilterOption<ProgramStatusEnum?>? value) => ApplyFilter();
+    partial void OnSelectedStatusChanged(FilterOption<ProgramPhaseEnum?>? value) => ApplyFilter();
 
     async partial void OnIncludeLongEndedChanged(bool value) => await ReloadAsync(CancellationToken.None);
 
@@ -85,7 +86,7 @@ public sealed partial class DiscountProgramListViewModel(
     async Task DeleteAsync(DiscountProgramItem item)
     {
         var confirmed = await dialogs.ConfirmAsync("Xoá chương trình?",
-            $"Chương trình nháp \"{item.Name}\" sẽ bị xoá khỏi tool. Chương trình chưa từng triển khai nên KiotViet không bị ảnh hưởng.",
+            $"Chương trình nháp \"{item.Name}\" sẽ bị xoá khỏi tool. Chương trình chưa từng áp dụng nên máy thu ngân không bị ảnh hưởng.",
             "Xoá chương trình", destructive: true);
         if (!confirmed) return;
 
@@ -106,9 +107,10 @@ public sealed partial class DiscountProgramListViewModel(
     {
         _all = [.. (await programs.GetListAsync(IncludeLongEnded, cancellationToken)).Select(p => new DiscountProgramItem(p))];
         HasData = _all.Count > 0;
+        FeedWarning = _all.Any(p => p.IsActiveStatus) ? DisplayFormat.FeedWarning(feed.Status) : null;
         ApplyFilter();
     }
 
     void ApplyFilter() =>
-        Programs = SelectedStatus?.Value is { } status ? [.. _all.Where(p => p.Program.Status == status)] : _all;
+        Programs = SelectedStatus?.Value is { } status ? [.. _all.Where(p => p.Program.Phase == status)] : _all;
 }

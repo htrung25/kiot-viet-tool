@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>KiotViet Tool – Giảm giá tại quầy</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; color: #0F172A; margin: 0; padding: 16px; min-width: 340px; max-width: 520px; }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  label { display: block; font-weight: 600; margin: 12px 0 4px; }
+  input { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #CBD5E1; border-radius: 6px; font: inherit; }
+  button { margin-top: 14px; padding: 8px 14px; border: 0; border-radius: 6px; background: #2563EB; color: #fff; font: inherit; cursor: pointer; }
+  #status { margin-top: 14px; padding: 10px; border-radius: 6px; background: #F1F5F9; white-space: pre-line; }
+  #status.bad { background: #FEF2F2; color: #B91C1C; }
+</style>
+</head>
+<body>
+<h1>KiotViet Tool – Giảm giá tại quầy</h1>
+<label for="feedUrl">Địa chỉ máy chủ giảm giá</label>
+<input id="feedUrl" placeholder="https://kiot-viet-discount-feed.<tên>.workers.dev">
+<label for="readToken">Mã đọc</label>
+<input id="readToken" type="password" autocomplete="off">
+<button id="save">Lưu và tải danh sách</button>
+<div id="status">Đang đọc trạng thái…</div>
+<script src="options.js"></script>
+</body>
+</html>

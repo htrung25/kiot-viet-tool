@@ -64,7 +64,7 @@ public sealed partial class MainViewModel : ObservableObject
             var offset = _clock.Offset;
             var minutes = Math.Round(offset.Duration().TotalMinutes);
             return $"Giờ máy tính đang {(offset > TimeSpan.Zero ? "chậm" : "nhanh")} {minutes:0} phút so với KiotViet. "
-                + "Tool vẫn áp / trả giá theo giờ KiotViet, nhưng hãy chỉnh lại giờ Windows "
+                + "Tool vẫn tính giờ chương trình theo giờ KiotViet, nhưng hãy chỉnh lại giờ Windows "
                 + "(Cài đặt → Thời gian & ngôn ngữ → Ngày & giờ → Đồng bộ ngay).";
         }
     }

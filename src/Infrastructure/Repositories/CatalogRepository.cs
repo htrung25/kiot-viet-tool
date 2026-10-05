@@ -2,7 +2,6 @@ using KiotVietTool.Application.Common.Pagination;
 using KiotVietTool.Application.DTOs;
 using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Domain.Entities;
-using KiotVietTool.Domain.Enums;
 using KiotVietTool.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
@@ -107,29 +106,12 @@ internal sealed class CatalogRepository(IDbContextFactory<AppDbContext> dbFactor
             .ToListAsync(cancellationToken);
     }
 
-    static readonly ProgramStatusEnum[] HoldingStatuses =
-    [
-        ProgramStatusEnum.Applying, ProgramStatusEnum.Running, ProgramStatusEnum.ApplyFailed,
-        ProgramStatusEnum.Restoring, ProgramStatusEnum.RestoreFailed,
-    ];
-
-    static IQueryable<ProductDto> ToDtos(AppDbContext db, IQueryable<Product> products)
-    {
-        var discounts =
-            from pp in db.ProgramProductPrices
-            join dp in db.DiscountPrograms on pp.ProgramId equals dp.Id
-            where pp.State == PriceStateEnum.Applied && HoldingStatuses.Contains(dp.Status)
-            select new { pp.ProductId, dp.Name, pp.OriginalPrice, pp.DiscountedPrice };
-
-        return
-            from p in products
-            join c in db.Categories on p.CategoryId equals c.Id into categories
-            from c in categories.DefaultIfEmpty()
-            join d in discounts on p.Id equals d.ProductId into active
-            from d in active.DefaultIfEmpty()
-            select new ProductDto(p.Id, p.Code, p.FullName, c == null ? null : c.Name, p.Unit, p.Type, p.BasePrice, p.IsActive,
-                p.AllowsSale, d == null ? null : d.Name, d == null ? null : d.OriginalPrice, d == null ? null : d.DiscountedPrice);
-    }
+    static IQueryable<ProductDto> ToDtos(AppDbContext db, IQueryable<Product> products) =>
+        from p in products
+        join c in db.Categories on p.CategoryId equals c.Id into categories
+        from c in categories.DefaultIfEmpty()
+        select new ProductDto(p.Id, p.Code, p.FullName, c == null ? null : c.Name, p.Unit, p.Type, p.BasePrice, p.IsActive,
+            p.AllowsSale, null, null);
 
     public async Task<IReadOnlyList<PriceBook>> GetPriceBookEntitiesAsync(CancellationToken cancellationToken)
     {

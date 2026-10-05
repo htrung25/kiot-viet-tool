@@ -24,8 +24,7 @@ public static class DependencyInjection
         services.AddSingleton<ICatalogSyncService, CatalogSyncService>();
         services.AddTransient<ICatalogService, CatalogService>();
         services.AddTransient<IDiscountProgramService, DiscountProgramService>();
-        services.AddTransient<ProgramScheduleService>();
-        services.AddSingleton<IPriceDeploymentService, PriceDeploymentService>();
+        services.AddSingleton<IDiscountFeedService, DiscountFeedService>();
         return services;
     }
 }
