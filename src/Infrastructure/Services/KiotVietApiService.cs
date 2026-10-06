@@ -21,6 +21,7 @@ namespace KiotVietTool.Infrastructure.Services;
 internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
 {
     const int PageSize = 100;
+    const int InvoiceCompleted = 1; // KiotViet: 1 hoàn thành, 2 đã huỷ, 3 đang xử lý, 5 không giao được
     static readonly TimeSpan TokenRefreshMargin = TimeSpan.FromSeconds(60);
     static readonly TimeSpan MaxRetryAfter = TimeSpan.FromSeconds(60);
     static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
@@ -43,6 +44,7 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
     readonly SemaphoreSlim _tokenLock = new(1, 1);
     CachedToken? _token;
     bool _missingTypeLogged;
+    bool _missingInvoiceDetailsLogged;
 
     public KiotVietApiService(IOptions<KiotVietOptions> options, TimeProvider timeProvider, IServerClockService clock,
         ILogger<KiotVietApiService> logger)
@@ -103,6 +105,31 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
         CancellationToken cancellationToken) =>
         [.. (await GetAllAsync<PriceBookItemJson>(credentials, $"/pricebooks/{priceBookId}?", cancellationToken))
             .Select(i => PriceBookItem.Create(priceBookId, i.ProductId, i.Price))];
+
+    public async Task<KiotVietPageDto<KiotVietInvoiceDto>> GetInvoicesPageAsync(KiotVietCredentialsDto credentials, DateTime fromUtc,
+        DateTime toUtc, int currentItem, CancellationToken cancellationToken)
+    {
+        static string Local(DateTime utc) => Uri.EscapeDataString(
+            VietnamTime.FromUtc(utc).ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture));
+        var page = await GetAsync<PageJson<InvoiceJson>>(credentials,
+            $"/invoices?pageSize={PageSize}&currentItem={currentItem}&fromPurchaseDate={Local(fromUtc)}&toPurchaseDate={Local(toUtc)}",
+            cancellationToken);
+
+        var items = page.Data ?? [];
+        if (items.Count > 0 && items.All(i => i.InvoiceDetails is null) && !_missingInvoiceDetailsLogged)
+        {
+            _missingInvoiceDetailsLogged = true;
+            _logger.LogWarning("KiotViet invoice list has no invoiceDetails; these invoices cannot be reconciled");
+        }
+        return new KiotVietPageDto<KiotVietInvoiceDto>([.. items.Where(i => i.PurchaseDate is not null).Select(ToInvoice)], page.Total, []);
+    }
+
+    static KiotVietInvoiceDto ToInvoice(InvoiceJson i) => new(
+        i.Id, i.Code ?? i.Id.ToString(CultureInfo.InvariantCulture), ToUtc(i.PurchaseDate)!.Value, i.BranchName, i.SoldByName,
+        i.Total ?? 0, i.Discount ?? 0,
+        IsCompleted: i.Status is null or InvoiceCompleted,
+        [.. (i.InvoiceDetails ?? []).Select(d => new CheckoutLine(d.ProductId, d.ProductCode ?? "", d.ProductName ?? "",
+            (decimal)(d.Quantity ?? 0), d.Price ?? 0))]);
 
     public void Dispose()
     {
@@ -336,4 +363,8 @@ internal sealed class KiotVietApiService : IKiotVietApiService, IDisposable
     sealed record CustomerGroupJson(long CustomerGroupId);
     sealed record UserJson(long UserId);
     sealed record PriceBookItemJson(long ProductId, decimal Price);
+
+    sealed record InvoiceJson(long Id, string? Code, DateTime? PurchaseDate, string? BranchName, string? SoldByName, decimal? Total,
+        decimal? Discount, int? Status, List<InvoiceDetailJson>? InvoiceDetails);
+    sealed record InvoiceDetailJson(long ProductId, string? ProductCode, string? ProductName, double? Quantity, decimal? Price);
 }

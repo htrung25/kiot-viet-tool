@@ -26,11 +26,18 @@ internal sealed class KiotVietConnectionRepository(IDbContextFactory<AppDbContex
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await db.InvoiceReconciliations.ExecuteDeleteAsync(cancellationToken);
         await db.PriceBookItems.ExecuteDeleteAsync(cancellationToken);
         await db.PriceBooks.ExecuteDeleteAsync(cancellationToken);
         await db.Products.ExecuteDeleteAsync(cancellationToken);
         await db.Categories.ExecuteDeleteAsync(cancellationToken);
         await db.KiotVietConnections.ExecuteDeleteAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task UpdateInvoicesReconciledToAsync(DateTime toUtc, CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.KiotVietConnections.ExecuteUpdateAsync(s => s.SetProperty(c => c.InvoicesReconciledToUtc, toUtc), cancellationToken);
     }
 }

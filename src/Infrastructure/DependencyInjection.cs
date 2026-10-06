@@ -77,6 +77,8 @@ public static class DependencyInjection
         services.AddSingleton<IDiscountFeedApiService, DiscountFeedApiService>();
         services.AddSingleton<ICloudflareApiService, CloudflareApiService>();
         services.AddTransient<IDiscountFeedConnectionRepository, DiscountFeedConnectionRepository>();
+        services.AddTransient<IDiscountFeedSnapshotRepository, DiscountFeedSnapshotRepository>();
+        services.AddTransient<IInvoiceReconciliationRepository, InvoiceReconciliationRepository>();
         services.AddSingleton<ITelegramApiService, TelegramApiService>();
         services.AddSingleton<IOneTimeCodeService, OneTimeCodeService>();
         services.AddTransient<ITelegramConnectionRepository, TelegramConnectionRepository>();

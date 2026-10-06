@@ -1,0 +1,154 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             xmlns:models="using:KiotVietTool.Desktop.Models"
+             x:Class="KiotVietTool.Desktop.Views.InvoiceReconciliationView"
+             x:DataType="vm:InvoiceReconciliationViewModel">
+    <Grid Classes="page" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="accent" VerticalAlignment="Center" Command="{Binding RunCommand}"
+                    IsEnabled="{Binding IsIdle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource Icon.Sync}" />
+                    <TextBlock Text="Đối soát ngay" />
+                </StackPanel>
+            </Button>
+            <StackPanel Spacing="4" Margin="0,0,16,0">
+                <TextBlock Text="Đối soát giảm giá" Classes="h1" />
+                <TextBlock Classes="subtitle" TextWrapping="Wrap"
+                           Text="So tiền giảm trên từng hoá đơn KiotViet với số đúng ra theo chương trình đang chạy lúc bán: phát hiện quầy không giảm, giảm sai, hoặc tự giảm ngoài chương trình." />
+            </StackPanel>
+        </DockPanel>
+
+        <StackPanel Grid.Row="1" Spacing="8">
+            <Border Classes="alert error" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <DockPanel>
+                    <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                    <TextBlock Text="{Binding ErrorMessage}" />
+                </DockPanel>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <ProgressBar IsIndeterminate="True" Width="80" MinWidth="80" IsVisible="{Binding IsBusy}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StatusText}" Classes="caption" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <Border Grid.Row="2" Classes="card">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                <DockPanel Margin="16,14,16,4" IsVisible="{Binding !ShowEmptyState}">
+                    <Button DockPanel.Dock="Right" Classes="secondary" Content="Đánh dấu đã xem" Margin="10,0,0,10"
+                            Command="{Binding MarkReviewedCommand}" IsEnabled="{Binding IsIdle}"
+                            ToolTip.Tip="Các hoá đơn cần xem đang hiển thị sẽ không còn tính trong cảnh báo" />
+                    <WrapPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,16,10">
+                            <Button Classes="icon" Command="{Binding PreviousDayCommand}" ToolTip.Tip="Ngày trước">
+                                <PathIcon Data="{StaticResource Icon.ChevronLeft}" />
+                            </Button>
+                            <CalendarDatePicker SelectedDate="{Binding SelectedDate}" Width="150"
+                                                SelectedDateFormat="Custom" CustomDateFormatString="dd/MM/yyyy" />
+                            <Button Classes="icon" Command="{Binding NextDayCommand}" ToolTip.Tip="Ngày sau">
+                                <PathIcon Data="{StaticResource Icon.ChevronRight}" />
+                            </Button>
+                        </StackPanel>
+                        <ComboBox Width="210" Margin="0,0,16,10" ItemsSource="{Binding FilterOptions}"
+                                  SelectedItem="{Binding SelectedFilter}" />
+                    </WrapPanel>
+                </DockPanel>
+                <StackPanel Grid.Row="1" Margin="16,0,16,12" Spacing="2" IsVisible="{Binding !ShowEmptyState}">
+                    <TextBlock Text="{Binding SummaryText}" Classes="caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding AmountText}" Classes="caption" TextWrapping="Wrap" FontWeight="SemiBold"
+                               Foreground="{StaticResource Danger.Text}" IsVisible="{Binding HasAmount}" />
+                </StackPanel>
+                <Border Grid.Row="2" Classes="divider" />
+
+                <Panel Grid.Row="3">
+                    <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding HasRows}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="GIỜ" Width="78" MinWidth="78" Binding="{Binding TimeText}" x:DataType="models:ReconciliationRowItem" />
+                            <DataGridTemplateColumn Header="HOÁ ĐƠN" Width="1.1*" MinWidth="110">
+                                <DataTemplate x:DataType="models:ReconciliationRowItem">
+                                    <TextBlock Text="{Binding Code}" Classes="code" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="THU NGÂN" Width="1.5*" MinWidth="120" Binding="{Binding SoldBy}"
+                                                x:DataType="models:ReconciliationRowItem" />
+                            <DataGridTextColumn Header="ĐÃ GIẢM" Width="*" MinWidth="108" Binding="{Binding ActualText}"
+                                                x:DataType="models:ReconciliationRowItem" />
+                            <DataGridTextColumn Header="ĐÚNG RA" Width="*" MinWidth="108" Binding="{Binding ExpectedText}"
+                                                x:DataType="models:ReconciliationRowItem" />
+                            <DataGridTextColumn Header="CHÊNH" Width="*" MinWidth="110" Binding="{Binding DifferenceText}"
+                                                x:DataType="models:ReconciliationRowItem" />
+                            <DataGridTemplateColumn Header="KẾT QUẢ" Width="1.3*" MinWidth="162">
+                                <DataTemplate x:DataType="models:ReconciliationRowItem">
+                                    <Panel VerticalAlignment="Center">
+                                        <Border Classes="badge success" IsVisible="{Binding IsMatched}">
+                                            <TextBlock Text="{Binding OutcomeText}" />
+                                        </Border>
+                                        <Border Classes="badge danger" IsVisible="{Binding NeedsReview}">
+                                            <TextBlock Text="{Binding OutcomeText}" />
+                                        </Border>
+                                        <Border Classes="badge" IsVisible="{Binding IsReviewedProblem}" ToolTip.Tip="Đã xem">
+                                            <TextBlock Text="{Binding OutcomeText}" />
+                                        </Border>
+                                    </Panel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel IsVisible="{Binding ShowEmptyState}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Spacing="10" Margin="24,48" MaxWidth="420">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.ClipboardCheck}" />
+                        </Border>
+                        <TextBlock Text="Chưa có dữ liệu đối soát" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Classes="subtitle" TextAlignment="Center" TextWrapping="Wrap"
+                                   Text="Cần kết nối KiotViet và đã gửi danh sách giảm giá tới máy thu ngân ít nhất một lần. Sau đó tool tự đối soát mỗi 15 phút." />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding ShowNoResults}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Spacing="10" Margin="24,48" MaxWidth="380">
+                        <Border Classes="emptyIcon">
+                            <PathIcon Data="{StaticResource Icon.Search}" />
+                        </Border>
+                        <TextBlock Text="Không có hoá đơn" Classes="h2" FontSize="16" HorizontalAlignment="Center" />
+                        <TextBlock Text="Không có hoá đơn nào trong ngày hoặc bộ lọc đang chọn." Classes="subtitle"
+                                   TextAlignment="Center" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Panel>
+
+                <!-- Selected invoice lines -->
+                <Border Grid.Row="4" Classes="cardFooter" IsVisible="{Binding HasSelection}" MaxHeight="150">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+                            <TextBlock Text="{Binding SelectedRow.Code, FallbackValue=''}" Classes="label" />
+                            <TextBlock Text="{Binding SelectedRow.TotalText, FallbackValue='', StringFormat='Tổng tiền {0}'}"
+                                       Classes="caption" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding SelectedRow.ProgramNames, FallbackValue='', StringFormat='Chương trình: {0}'}"
+                                       Classes="caption" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding SelectedRow.Lines, FallbackValue={x:Null}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ReconciledLineItem">
+                                        <Grid ColumnDefinitions="110,*,60,110,110,180" ColumnSpacing="10" Margin="0,3">
+                                            <TextBlock Text="{Binding Code}" Classes="code" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                                                       ToolTip.Tip="{Binding Name}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding QuantityText, StringFormat='×{0}'}" Classes="caption" />
+                                            <TextBlock Grid.Column="3" Text="{Binding PriceText}" Classes="caption" />
+                                            <TextBlock Grid.Column="4" Text="{Binding ExpectedText, StringFormat='giảm {0}'}" />
+                                            <TextBlock Grid.Column="5" Text="{Binding ProgramName}" Classes="caption"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

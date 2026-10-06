@@ -65,6 +65,22 @@ internal sealed class TelegramService(
         return Result.Success();
     }
 
+    public async Task<bool> NotifyAsync(string message, CancellationToken cancellationToken = default)
+    {
+        if (await connections.GetAsync(cancellationToken) is not { } connection) return false;
+        if (secretProtector.Unprotect(connection.EncryptedBotToken) is not { Length: > 0 } token) return false;
+        try
+        {
+            await telegram.SendMessageAsync(token, connection.ChatId, message, cancellationToken);
+            return true;
+        }
+        catch (TelegramApiException ex)
+        {
+            logger.LogWarning(ex, "Could not send a Telegram notification");
+            return false;
+        }
+    }
+
     public async Task<Result> DisconnectAsync(string password, CancellationToken cancellationToken = default)
     {
         if (await VerifyPasswordAsync(password, cancellationToken) is { } error) return Result.Failure(error);

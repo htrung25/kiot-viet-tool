@@ -61,6 +61,7 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
             await services.InitializeDatabaseAsync();
             services.GetRequiredService<IdleLockService>().Attach((Window)sender!);
             services.GetRequiredService<DiscountFeedSyncService>().Start();
+            services.GetRequiredService<ReconciliationSyncService>().Start();
             await services.GetRequiredService<INavigationService>().NavigateToAsync<LoginViewModel>();
             Log.Information("Application started, version {Version}", typeof(App).Assembly.GetName().Version);
         }
@@ -115,6 +116,8 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
                 services.AddTransient<TelegramSettingsViewModel>();
                 services.AddTransient<TelegramSetupViewModel>();
                 services.AddSingleton<DiscountFeedSyncService>();
+                services.AddSingleton<ReconciliationSyncService>();
+                services.AddTransient<InvoiceReconciliationViewModel>();
             })
             .Build();
 

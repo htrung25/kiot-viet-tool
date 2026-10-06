@@ -70,6 +70,13 @@
                                 <TextBlock Text="Chương trình giảm giá" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
+                        <Button Classes="navItem" Classes.active="{Binding IsReconciliationActive}"
+                                Command="{Binding OpenReconciliationCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <PathIcon Data="{StaticResource Icon.ClipboardCheck}" />
+                                <TextBlock Text="Đối soát giảm giá" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
 
                         <TextBlock Text="HỆ THỐNG" Classes="navSection" Margin="12,16,12,6" />
                         <Button Classes="navItem" Classes.active="{Binding IsConnectionActive}"
@@ -104,6 +111,15 @@
                     <DockPanel>
                         <PathIcon Data="{StaticResource Icon.AlertCircle}" />
                         <TextBlock Text="{Binding ClockWarning}" />
+                    </DockPanel>
+                </Border>
+                <Border DockPanel.Dock="Top" Classes="alert error" Margin="32,20,32,0"
+                        IsVisible="{Binding ShowReconciliationWarning}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Classes="secondary" Content="Xem" Margin="12,0,0,0" VerticalAlignment="Center"
+                                Command="{Binding OpenReconciliationCommand}" />
+                        <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                        <TextBlock Text="{Binding ReconciliationWarning}" />
                     </DockPanel>
                 </Border>
                 <ContentControl Content="{Binding Navigation.CurrentViewModel}" />

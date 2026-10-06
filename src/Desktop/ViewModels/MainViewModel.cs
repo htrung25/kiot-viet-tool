@@ -16,10 +16,17 @@ public sealed partial class MainViewModel : ObservableObject
     readonly IAuthService _authService;
     readonly LockScreenViewModel _lockScreen;
     readonly IServerClockService _clock;
+    readonly IInvoiceReconciliationService _reconciliation;
 
     public MainViewModel(INavigationService navigation, IUserSessionService session, IAuthService authService,
-        IdleLockService idleLock, LockScreenViewModel lockScreen, IServerClockService clock)
+        IdleLockService idleLock, LockScreenViewModel lockScreen, IServerClockService clock, IInvoiceReconciliationService reconciliation)
     {
+        _reconciliation = reconciliation;
+        _reconciliation.Changed += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(ReconciliationWarning));
+            OnPropertyChanged(nameof(ShowReconciliationWarning));
+        });
         Navigation = navigation;
         _session = session;
         _authService = authService;
@@ -41,6 +48,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(ShowChrome));
             OnPropertyChanged(nameof(ShowClockWarning));
+            OnPropertyChanged(nameof(ShowReconciliationWarning));
             OnPropertyChanged(nameof(Username));
             OnPropertyChanged(nameof(UserInitial));
         };
@@ -67,6 +75,12 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    public bool ShowReconciliationWarning => ShowChrome && _reconciliation.Status.UnreviewedProblems > 0
+        && Navigation.CurrentViewModel is not InvoiceReconciliationViewModel;
+
+    public string ReconciliationWarning =>
+        $"Có {_reconciliation.Status.UnreviewedProblems} hoá đơn giảm giá không khớp chương trình cần xem.";
+
     public string? Username => _session.CurrentUser?.Username;
     public string UserInitial => Username is { Length: > 0 } name ? name[..1].ToUpperInvariant() : "";
 
@@ -76,6 +90,7 @@ public sealed partial class MainViewModel : ObservableObject
     public bool IsTelegramActive => Navigation.CurrentViewModel is TelegramSettingsViewModel or TelegramSetupViewModel;
     public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel
         or DiscountProgramDetailViewModel;
+    public bool IsReconciliationActive => Navigation.CurrentViewModel is InvoiceReconciliationViewModel;
 
     void OnNavigationChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -88,8 +103,14 @@ public sealed partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(IsDiscountFeedActive));
             OnPropertyChanged(nameof(IsTelegramActive));
             OnPropertyChanged(nameof(IsProgramsActive));
+            OnPropertyChanged(nameof(IsReconciliationActive));
+            OnPropertyChanged(nameof(ShowReconciliationWarning));
         }
     }
+
+    [RelayCommand]
+    Task OpenReconciliationAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<InvoiceReconciliationViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task OpenProductsAsync(CancellationToken cancellationToken) =>

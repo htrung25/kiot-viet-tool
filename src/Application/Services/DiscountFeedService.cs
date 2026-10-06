@@ -18,6 +18,7 @@ internal sealed class DiscountFeedService(
     IDiscountProgramRepository programs,
     IDiscountProgramService programService,
     IDiscountFeedConnectionRepository connections,
+    IDiscountFeedSnapshotRepository snapshots,
     IDiscountFeedApiService feedApi,
     ISecretProtectorService secretProtector,
     TimeProvider timeProvider,
@@ -230,6 +231,8 @@ internal sealed class DiscountFeedService(
             }
 
             await connections.UpdateRevisionAsync(connection.Id, connection.InstanceId, revision, CancellationToken.None);
+            await snapshots.AddAsync(DiscountFeedSnapshot.Create(revision, now, feedPrograms.Select(p =>
+                new CheckoutProgram(p.Id, p.Name, p.Type, p.Value, p.StartAtUtc, p.EndAtUtc, p.ProductIds))), CancellationToken.None);
             _publishedHash = hash;
             _attemptedHashes.Clear();
             SetStatus(new DiscountFeedStatusDto(true, now, null));

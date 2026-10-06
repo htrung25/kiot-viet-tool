@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddTransient<IDiscountProgramService, DiscountProgramService>();
         services.AddSingleton<IDiscountFeedService, DiscountFeedService>();
         services.AddTransient<IDiscountFeedConnectionService, DiscountFeedConnectionService>();
+        services.AddSingleton<IInvoiceReconciliationService, InvoiceReconciliationService>();
         return services;
     }
 }

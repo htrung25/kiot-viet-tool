@@ -19,6 +19,7 @@
     return null;
   }
 
+  // Must stay identical to DiscountFeedSnapshot.Evaluate (C#), used to reconcile invoices.
   function computeDiscount(lines, programs, nowMs) {
     const byProduct = new Map();
     for (const p of programs || []) {

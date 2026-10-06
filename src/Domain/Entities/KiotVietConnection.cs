@@ -15,6 +15,7 @@ public sealed partial class KiotVietConnection
     public string EncryptedClientSecret { get; private set; } = "";
     public DateTime? LastSyncedAtUtc { get; private set; }
     public DateTime? ProductsSyncedFromUtc { get; private set; }
+    public DateTime? InvoicesReconciledToUtc { get; private set; }
 
     private KiotVietConnection() { } // EF Core
 

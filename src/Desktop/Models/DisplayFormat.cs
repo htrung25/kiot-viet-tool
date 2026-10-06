@@ -30,6 +30,16 @@ public static class DisplayFormat
         _ => phase.ToString(),
     };
 
+    public static string Outcome(ReconciliationOutcomeEnum outcome) => outcome switch
+    {
+        ReconciliationOutcomeEnum.Matched => "Khớp",
+        ReconciliationOutcomeEnum.MissingDiscount => "Thiếu giảm",
+        ReconciliationOutcomeEnum.WrongAmount => "Giảm sai",
+        ReconciliationOutcomeEnum.UnexpectedDiscount => "Ngoài chương trình",
+        ReconciliationOutcomeEnum.NearBoundary => "Sát giờ",
+        _ => outcome.ToString(),
+    };
+
     public static string? FeedWarning(DiscountFeedStatusDto status) => status switch
     {
         { IsConfigured: false } =>

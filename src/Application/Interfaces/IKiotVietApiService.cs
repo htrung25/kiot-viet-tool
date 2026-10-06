@@ -13,4 +13,6 @@ public interface IKiotVietApiService
     Task<IReadOnlyList<PriceBook>> GetPriceBooksAsync(KiotVietCredentialsDto credentials, CancellationToken cancellationToken);
     Task<IReadOnlyList<PriceBookItem>> GetPriceBookItemsAsync(KiotVietCredentialsDto credentials, long priceBookId,
         CancellationToken cancellationToken);
+    Task<KiotVietPageDto<KiotVietInvoiceDto>> GetInvoicesPageAsync(KiotVietCredentialsDto credentials, DateTime fromUtc, DateTime toUtc,
+        int currentItem, CancellationToken cancellationToken);
 }

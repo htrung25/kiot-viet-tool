@@ -21,4 +21,7 @@ public interface ITelegramService
 
     /// <summary>Removes the bot token and recovery codes. Needs the signed-in user's password.</summary>
     Task<Result> DisconnectAsync(string password, CancellationToken cancellationToken = default);
+
+    // Best effort: false when Telegram is not connected or the message could not be sent.
+    Task<bool> NotifyAsync(string message, CancellationToken cancellationToken = default);
 }

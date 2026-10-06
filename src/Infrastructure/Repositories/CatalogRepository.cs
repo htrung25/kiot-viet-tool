@@ -48,7 +48,10 @@ internal sealed class CatalogRepository(IDbContextFactory<AppDbContext> dbFactor
             db.PriceBookItems.AddRange(items.DistinctBy(i => i.ProductId));
         }
 
-        db.KiotVietConnections.Update(sync.Connection);
+        // Only the sync fields: Update() would also overwrite columns written meanwhile (invoice reconciliation cursor).
+        await db.KiotVietConnections.Where(c => c.Id == sync.Connection.Id).ExecuteUpdateAsync(s => s
+            .SetProperty(c => c.LastSyncedAtUtc, sync.Connection.LastSyncedAtUtc)
+            .SetProperty(c => c.ProductsSyncedFromUtc, sync.Connection.ProductsSyncedFromUtc), cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
