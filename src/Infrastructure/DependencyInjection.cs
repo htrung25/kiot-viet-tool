@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using KiotVietTool.Application.Interfaces;
 using KiotVietTool.Infrastructure.Options;
 using KiotVietTool.Infrastructure.Persistence;
@@ -41,10 +43,15 @@ public static class DependencyInjection
 
         services.AddOptions<DiscountFeedOptions>()
             .Bind(configuration.GetSection(DiscountFeedOptions.SectionName))
-            .Validate(o => string.IsNullOrWhiteSpace(o.Url) || (Uri.TryCreate(o.Url, UriKind.Absolute, out var url)
-                    && (url.Scheme == Uri.UriSchemeHttps || url.IsLoopback) && !string.IsNullOrWhiteSpace(o.WriteToken)),
-                $"{DiscountFeedOptions.SectionName}: Url must be an https URL (http only for localhost) and WriteToken is required when Url is set.")
             .Validate(o => o.RequestTimeoutSeconds > 0, $"{DiscountFeedOptions.SectionName}:RequestTimeoutSeconds must be positive.")
+            .ValidateOnStart();
+
+        services.AddOptions<CloudflareOptions>()
+            .Bind(configuration.GetSection(CloudflareOptions.SectionName))
+            .Validate(o => Uri.TryCreate(o.ApiBaseUrl, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps
+                && o.RequestTimeoutSeconds > 0
+                && DateOnly.TryParseExact(o.CompatibilityDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                $"{CloudflareOptions.SectionName}: ApiBaseUrl must be an https URL, timeout positive, CompatibilityDate yyyy-MM-dd.")
             .ValidateOnStart();
 
         services.AddOptions<TelegramOptions>()
@@ -68,6 +75,8 @@ public static class DependencyInjection
         services.AddTransient<ICatalogRepository, CatalogRepository>();
         services.AddTransient<IDiscountProgramRepository, DiscountProgramRepository>();
         services.AddSingleton<IDiscountFeedApiService, DiscountFeedApiService>();
+        services.AddSingleton<ICloudflareApiService, CloudflareApiService>();
+        services.AddTransient<IDiscountFeedConnectionRepository, DiscountFeedConnectionRepository>();
         services.AddSingleton<ITelegramApiService, TelegramApiService>();
         services.AddSingleton<IOneTimeCodeService, OneTimeCodeService>();
         services.AddTransient<ITelegramConnectionRepository, TelegramConnectionRepository>();

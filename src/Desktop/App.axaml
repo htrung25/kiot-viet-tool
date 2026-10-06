@@ -37,6 +37,9 @@
         <DataTemplate DataType="vm:DiscountProgramDetailViewModel">
             <views:DiscountProgramDetailView />
         </DataTemplate>
+        <DataTemplate DataType="vm:DiscountFeedConnectionViewModel">
+            <views:DiscountFeedConnectionView />
+        </DataTemplate>
         <DataTemplate DataType="vm:TelegramSetupViewModel">
             <views:TelegramSetupView />
         </DataTemplate>

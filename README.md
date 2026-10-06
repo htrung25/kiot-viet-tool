@@ -71,7 +71,8 @@ Sửa `appsettings.json` ngay cạnh file `.exe`, không cần build lại:
 | `Auth:DefaultAdminUsername`, `Auth:DefaultAdminPassword` | Tài khoản admin tạo ở lần chạy đầu (chỉ khi chưa có tài khoản nào) |
 | `Auth:IdleLockMinutes` | Số phút không thao tác thì tool tự khoá, phải nhập lại mật khẩu (mặc định 30, `0` = tắt) |
 | `Auth:IdleWarningSeconds` | Hiện cảnh báo trước khi khoá bao nhiêu giây (mặc định 60) |
-| `DiscountFeed:Url`, `DiscountFeed:WriteToken` | Địa chỉ Worker giảm giá và mã ghi (xem mục *Giảm giá tại quầy*). Để trống `Url` = chưa dùng được chương trình giảm giá |
+| `DiscountFeed:RequestTimeoutSeconds` | Thời gian chờ khi gửi danh sách giảm giá tới Worker. Địa chỉ Worker và mã **không** nằm ở đây: mỗi cửa hàng cấu hình trong tool (*Hệ thống → Máy thu ngân*), lưu mã hoá trong `app.db` |
+| `Cloudflare:ApiBaseUrl`, `Cloudflare:CompatibilityDate` | Cloudflare API dùng khi tool tự cài Worker, và compatibility date của Worker |
 | `Database:Path` | Đường dẫn file SQLite, có thể dùng biến môi trường `%LOCALAPPDATA%` |
 | `Serilog:MinimumLevel:Default` | Mức log (`Debug`, `Information`, `Warning`…) |
 | `Serilog:WriteTo:0:Args:path` | Nơi ghi log |
@@ -86,21 +87,24 @@ Tool (máy chủ cửa hàng) ──PUT /v1/feed──▶ Worker `feed/` (Cloudf
 
 Worker chỉ giữ danh sách "sản phẩm → mức giảm, từ … đến …"; không có Client Secret KiotViet. Tiện ích tự xét giờ (theo header `Date` của Worker), nên tool không cần bật vào giờ bắt đầu / kết thúc.
 
-**Cài Worker (một lần):**
+**Mỗi cửa hàng một Worker, trên tài khoản Cloudflare của chính cửa hàng.** Cài trong tool: *Hệ thống → Máy thu ngân*.
+
+- **Tự cài lên Cloudflare (khuyên dùng):** tạo API Token tại dash.cloudflare.com → *My Profile → API Tokens → Create Token* theo mẫu **Edit Cloudflare Workers**, dán vào tool, bấm *Kiểm tra token*, chọn tài khoản, bấm *Cài lên Cloudflare*. Tool tạo KV namespace (tên = tên Worker), upload `feed/discount-feed.js` (nhúng sẵn trong exe), sinh mã ghi / mã đọc ngẫu nhiên làm secret và bật địa chỉ `https://<tên-worker>.<tên-tài-khoản>.workers.dev`. API Token chỉ dùng cho lần cài, không được lưu. Bấm lại cùng tên Worker (*Cập nhật Worker*) để đưa bản Worker mới lên mà giữ nguyên mã. Tài khoản Cloudflare mới cần mở *Workers & Pages* một lần để có tên miền workers.dev.
+- **Đã có Worker:** tự deploy thư mục `feed/` rồi nhập địa chỉ và mã ghi (mã đọc tuỳ chọn) vào tool:
 
 ```bash
 cd feed
-npx wrangler kv namespace create FEED          # chép id vào feed/wrangler.jsonc (thay REPLACE_WITH_KV_NAMESPACE_ID)
+npx wrangler kv namespace create FEED          # chép id vào feed/wrangler.jsonc
 npx wrangler secret put WRITE_TOKEN            # chuỗi ngẫu nhiên dài, ví dụ: openssl rand -hex 32
 npx wrangler secret put READ_TOKEN             # chuỗi ngẫu nhiên khác
 npx wrangler deploy
 ```
 
-Hoặc tạo Workers Build thứ hai trên dashboard với *Root directory* = `feed`. Chạy thử trên máy: `npx wrangler dev` (đặt hai mã trong `feed/.dev.vars`); tool chấp nhận `http://localhost` cho `DiscountFeed:Url`.
+Chạy thử trên máy: `npx wrangler dev` (đặt hai mã trong `feed/.dev.vars`); tool chấp nhận `http://localhost` làm địa chỉ Worker.
 
-**Cấu hình tool:** `DiscountFeed:Url` = địa chỉ Worker, `DiscountFeed:WriteToken` = mã ghi.
+**Chống ghi đè giữa các máy:** mỗi bản cài tool có một mã định danh riêng và nhớ *revision* cuối cùng nó đã ghi. Mỗi lần gửi, tool kèm `If-Match: "<revision>"`; nếu Worker đã bị máy khác (hoặc bản sao lưu cũ của tool) cập nhật, Worker trả `412` và tool **ngừng gửi**, báo *Xung đột* ở màn Máy thu ngân. Người dùng chọn *Ghi đè bằng máy này* nếu đây là máy quản lý chính. Khi không có gì thay đổi, tool vẫn kiểm tra revision trên Worker mỗi phút để phát hiện sớm máy khác ghi đè.
 
-**Cài tiện ích trên máy thu ngân:** Chrome → `chrome://extensions` → bật *Developer mode* → *Load unpacked* → chọn thư mục `extension/`. Bấm biểu tượng tiện ích, nhập địa chỉ Worker và **mã đọc** (không dùng mã ghi), bấm *Lưu*. Trên trang bán hàng, góc trái dưới hiện ô xanh "KiotViet Tool: N chương trình đang giảm giá"; ô đỏ nghĩa là tiện ích đang **không giảm giá** (chưa cấu hình, mất kết nối quá 30 phút, hoặc KiotViet đổi giao diện).
+**Cài tiện ích trên máy thu ngân:** Chrome → `chrome://extensions` → bật *Developer mode* → *Load unpacked* → chọn thư mục `extension/`. Bấm biểu tượng tiện ích, nhập địa chỉ Worker và **mã đọc** (xem ở *Hệ thống → Máy thu ngân*; không dùng mã ghi), bấm *Lưu*. Trên trang bán hàng, góc trái dưới hiện ô xanh "KiotViet Tool: N chương trình đang giảm giá"; ô đỏ nghĩa là tiện ích đang **không giảm giá** (chưa cấu hình, mất kết nối quá 30 phút, hoặc KiotViet đổi giao diện).
 
 Tiện ích dùng hàm nội bộ `adjustDiscount` của trang bán hàng KiotViet (AngularJS). KiotViet cập nhật giao diện có thể làm tiện ích ngừng chạy; khi đó ô góc trái chuyển đỏ.
 

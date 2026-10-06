@@ -74,6 +74,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsProductsActive => Navigation.CurrentViewModel is ProductListViewModel;
     public bool IsConnectionActive => Navigation.CurrentViewModel is KiotVietConnectionViewModel;
+    public bool IsDiscountFeedActive => Navigation.CurrentViewModel is DiscountFeedConnectionViewModel;
     public bool IsTelegramActive => Navigation.CurrentViewModel is TelegramSettingsViewModel or TelegramSetupViewModel;
     public bool IsProgramsActive => Navigation.CurrentViewModel is DiscountProgramListViewModel or DiscountProgramEditorViewModel
         or DiscountProgramDetailViewModel;
@@ -86,6 +87,7 @@ public sealed partial class MainViewModel : ObservableObject
             OnPropertyChanged(nameof(ShowClockWarning));
             OnPropertyChanged(nameof(IsProductsActive));
             OnPropertyChanged(nameof(IsConnectionActive));
+            OnPropertyChanged(nameof(IsDiscountFeedActive));
             OnPropertyChanged(nameof(IsTelegramActive));
             OnPropertyChanged(nameof(IsProgramsActive));
         }
@@ -102,6 +104,10 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     Task OpenConnectionAsync(CancellationToken cancellationToken) =>
         Navigation.NavigateToAsync<KiotVietConnectionViewModel>(null, cancellationToken);
+
+    [RelayCommand]
+    Task OpenDiscountFeedAsync(CancellationToken cancellationToken) =>
+        Navigation.NavigateToAsync<DiscountFeedConnectionViewModel>(null, cancellationToken);
 
     [RelayCommand]
     Task OpenTelegramAsync(CancellationToken cancellationToken) =>

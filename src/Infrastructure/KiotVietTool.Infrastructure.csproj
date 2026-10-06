@@ -15,6 +15,10 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\feed\discount-feed.js" LogicalName="discount-feed.js" Link="Resources\discount-feed.js" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>

@@ -1,0 +1,179 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:KiotVietTool.Desktop.ViewModels"
+             x:Class="KiotVietTool.Desktop.Views.DiscountFeedConnectionView"
+             x:DataType="vm:DiscountFeedConnectionViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Máy thu ngân" Classes="h1" />
+                <TextBlock Text="Worker trên Cloudflare của cửa hàng chuyển danh sách giảm giá từ tool tới tiện ích Chrome trên máy thu ngân. Mỗi cửa hàng dùng Worker và mã riêng."
+                           Classes="subtitle" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Status -->
+            <Border Classes="card" Padding="20,16">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="ghost" Content="Ngắt kết nối" Foreground="{StaticResource Danger}"
+                            VerticalAlignment="Center" Command="{Binding DisconnectCommand}" IsEnabled="{Binding IsIdle}"
+                            IsVisible="{Binding IsConnected}" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Border Classes="emptyIcon" Width="36" Height="36" CornerRadius="8">
+                            <PathIcon Data="{StaticResource Icon.Cloud}" Width="18" Height="18" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Trạng thái" Classes="label" VerticalAlignment="Center" />
+                                <Border Classes="badge success" IsVisible="{Binding IsHealthy}">
+                                    <TextBlock Text="Đã kết nối" />
+                                </Border>
+                                <Border Classes="badge danger" IsVisible="{Binding HasConflict}">
+                                    <TextBlock Text="Xung đột" />
+                                </Border>
+                                <Border Classes="badge" IsVisible="{Binding !IsConnected}">
+                                    <TextBlock Text="Chưa kết nối" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding StatusText}" Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </DockPanel>
+            </Border>
+
+            <!-- Conflict -->
+            <StackPanel Spacing="10" IsVisible="{Binding HasConflict}">
+                <Border Classes="alert error">
+                    <DockPanel>
+                        <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                        <TextBlock Text="{Binding ConflictText}" />
+                    </DockPanel>
+                </Border>
+                <Button Classes="danger" Content="Ghi đè bằng máy này" HorizontalAlignment="Left"
+                        Command="{Binding TakeOverCommand}" IsEnabled="{Binding IsIdle}" />
+            </StackPanel>
+
+            <!-- Cashier extension setup -->
+            <Border Classes="card" IsVisible="{Binding IsConnected}">
+                <StackPanel Margin="24,20" Spacing="16">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="Cài tiện ích trên máy thu ngân" Classes="h2" FontSize="16" />
+                        <TextBlock Classes="caption" TextWrapping="Wrap"
+                                   Text="Trên mỗi máy thu ngân: bấm biểu tượng tiện ích KiotViet Tool trong Chrome, dán hai giá trị dưới đây rồi bấm Lưu. Không dùng mã ghi ở máy thu ngân." />
+                    </StackPanel>
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Địa chỉ máy chủ giảm giá" Classes="label" />
+                        <SelectableTextBlock Text="{Binding WorkerUrl}" FontWeight="SemiBold" Foreground="{StaticResource Primary}"
+                                             TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Classes="field">
+                        <TextBlock Text="Mã đọc" Classes="label" />
+                        <DockPanel IsVisible="{Binding HasReadToken}">
+                            <Button DockPanel.Dock="Right" Classes="secondary" Content="{Binding ReadTokenButtonText}"
+                                    Command="{Binding ToggleReadTokenCommand}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <Border Background="{StaticResource Bg.Subtle}" CornerRadius="8" Padding="12,8">
+                                <SelectableTextBlock Text="{Binding ReadTokenText}" FontFamily="Menlo,Consolas,monospace" FontSize="13"
+                                                     TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </Border>
+                        </DockPanel>
+                        <TextBlock IsVisible="{Binding !HasReadToken}" Classes="caption" TextWrapping="Wrap"
+                                   Text="Máy này chưa lưu mã đọc. Dùng READ_TOKEN bạn đã đặt khi deploy Worker, hoặc nhập nó ở phần Nhập thủ công để lần sau xem lại tại đây." />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Worker setup -->
+            <Border Classes="card">
+                <StackPanel Margin="24,20" Spacing="16">
+                    <TextBlock Text="Cài đặt Worker" Classes="h2" FontSize="16" />
+                    <WrapPanel>
+                        <RadioButton GroupName="FeedSetupMode" Content="Tự cài lên Cloudflare (khuyên dùng)" Margin="0,0,24,4"
+                                     IsChecked="{Binding IsCloudflareMode}" />
+                        <RadioButton GroupName="FeedSetupMode" Content="Đã có Worker: nhập địa chỉ và mã" Margin="0,0,0,4"
+                                     IsChecked="{Binding !IsCloudflareMode}" />
+                    </WrapPanel>
+
+                    <Border Classes="alert error"
+                            IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                            <TextBlock Text="{Binding ErrorMessage}" />
+                        </DockPanel>
+                    </Border>
+                    <Border Classes="badge success" HorizontalAlignment="Left" Padding="10,6"
+                            IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding SuccessMessage}" FontSize="13" TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- Deploy with the Cloudflare API -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsCloudflareMode}">
+                        <Border Classes="alert warning">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.Info}" />
+                                <TextBlock Text="Tạo API Token: dash.cloudflare.com → My Profile → API Tokens → Create Token → mẫu &quot;Edit Cloudflare Workers&quot;. Token chỉ dùng cho lần cài này, tool không lưu lại." />
+                            </DockPanel>
+                        </Border>
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Cloudflare API Token" Classes="label" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBox Text="{Binding ApiToken}" PasswordChar="•" Classes="revealPasswordButton"
+                                         PlaceholderText="Dán API Token" />
+                                <Button Grid.Column="1" Classes="secondary" Content="Kiểm tra token"
+                                        Command="{Binding LoadAccountsCommand}" IsEnabled="{Binding IsIdle}" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Classes="field" IsVisible="{Binding HasAccounts}">
+                            <TextBlock Text="Tài khoản Cloudflare" Classes="label" />
+                            <ComboBox ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}"
+                                      HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Tên Worker" Classes="label" />
+                            <TextBox Text="{Binding ScriptName}" MaxLength="63" />
+                            <TextBlock Classes="caption" TextWrapping="Wrap"
+                                       Text="Địa chỉ sẽ là https://tên-worker.tên-tài-khoản.workers.dev. Giữ nguyên tên để cập nhật Worker hiện tại; đổi tên là tạo Worker mới và máy thu ngân phải nhập lại." />
+                        </StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Classes="accent" Content="{Binding DeployButtonText}"
+                                    Command="{Binding DeployCommand}" IsEnabled="{Binding IsIdle}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding IsBusy}">
+                                <ProgressBar IsIndeterminate="True" Width="80" MinWidth="80" />
+                                <TextBlock Text="{Binding ProgressText, TargetNullValue='Đang xử lý…'}" Classes="caption"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+
+                    <!-- Worker deployed outside the tool -->
+                    <StackPanel Spacing="16" IsVisible="{Binding !IsCloudflareMode}">
+                        <TextBlock Classes="caption" TextWrapping="Wrap"
+                                   Text="Dùng khi bạn tự deploy thư mục feed/ bằng wrangler (xem README). Worker phải là phiên bản có chống ghi đè giữa các máy." />
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Địa chỉ Worker" Classes="label" />
+                            <TextBox Text="{Binding ManualUrl}" PlaceholderText="https://ten-worker.ten-ban.workers.dev" />
+                        </StackPanel>
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Mã ghi (WRITE_TOKEN)" Classes="label" />
+                            <TextBox Text="{Binding ManualWriteToken}" PasswordChar="•" Classes="revealPasswordButton"
+                                     PlaceholderText="Để trống nếu giữ mã đã lưu cho địa chỉ này" />
+                            <TextBlock Text="Được mã hoá khi lưu, chỉ dùng trên máy quản lý này." Classes="caption" />
+                        </StackPanel>
+                        <StackPanel Classes="field">
+                            <TextBlock Text="Mã đọc (READ_TOKEN, không bắt buộc)" Classes="label" />
+                            <TextBox Text="{Binding ManualReadToken}" PasswordChar="•" Classes="revealPasswordButton" />
+                            <TextBlock Text="Lưu lại để xem khi cài tiện ích trên máy thu ngân." Classes="caption" />
+                        </StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Classes="accent" Content="Kiểm tra và lưu"
+                                    Command="{Binding SaveManualCommand}" IsEnabled="{Binding IsIdle}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding IsBusy}">
+                                <ProgressBar IsIndeterminate="True" Width="80" MinWidth="80" />
+                                <TextBlock Text="{Binding ProgressText, TargetNullValue='Đang xử lý…'}" Classes="caption"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -190,6 +190,12 @@
     <Style Selector="Border.badge.success TextBlock">
         <Setter Property="Foreground" Value="{StaticResource Success.Text}" />
     </Style>
+    <Style Selector="Border.badge.danger">
+        <Setter Property="Background" Value="{StaticResource Danger.Soft}" />
+    </Style>
+    <Style Selector="Border.badge.danger TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource Danger.Text}" />
+    </Style>
 
     <!-- ===== Surfaces ===== -->
     <Style Selector="Border.card">

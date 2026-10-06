@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<PriceBookItem> PriceBookItems => Set<PriceBookItem>();
     public DbSet<DiscountProgram> DiscountPrograms => Set<DiscountProgram>();
     public DbSet<TelegramConnection> TelegramConnections => Set<TelegramConnection>();
+    public DbSet<DiscountFeedConnection> DiscountFeedConnections => Set<DiscountFeedConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
