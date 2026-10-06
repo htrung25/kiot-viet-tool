@@ -9,8 +9,6 @@ namespace KiotVietTool.Desktop.ViewModels;
 
 public sealed partial class TelegramSetupViewModel(
     ITelegramService telegram,
-    IAuthService authService,
-    IUserSessionService session,
     INavigationService navigation,
     INotificationService notifications) : ViewModelBase
 {
@@ -35,7 +33,6 @@ public sealed partial class TelegramSetupViewModel(
     [NotifyPropertyChangedFor(nameof(IsIdle), nameof(CanFinish))]
     public partial bool IsBusy { get; private set; }
 
-    public bool IsMandatory { get; } = session.CurrentUser?.NeedsTelegram == true;
     public bool IsStep1 => Step == 1;
     public bool IsStep2 => Step == 2;
     public bool IsStep3 => Step == 3;
@@ -44,10 +41,10 @@ public sealed partial class TelegramSetupViewModel(
     public bool CanFinish => HasSavedCodes && IsIdle;
     public string BotLink => $"t.me/{BotUsername}";
     public string RecoveryCodesText => string.Join(Environment.NewLine, RecoveryCodes);
-    public string Title => IsMandatory ? "Kết nối Telegram để tiếp tục" : "Kết nối lại Telegram";
-    public string Subtitle => IsMandatory
-        ? "Mỗi lần đăng nhập, tool gửi mã xác thực qua bot Telegram của bạn. Cần kết nối một lần trước khi dùng tool."
-        : "Đổi bot hoặc tài khoản Telegram nhận mã đăng nhập. Kết nối mới thay thế kết nối cũ và tạo bộ mã dự phòng mới.";
+    public string Title => "Kết nối Telegram";
+    public string Subtitle =>
+        "Sau khi kết nối, mỗi lần đăng nhập tool gửi mã xác thực qua bot Telegram của bạn (bật / tắt được ở mục Kết nối Telegram). "
+        + "Kết nối mới thay thế kết nối cũ và tạo bộ mã dự phòng mới.";
 
     partial void OnBotUsernameChanged(string value) => OnPropertyChanged(nameof(BotLink));
     partial void OnRecoveryCodesChanged(IReadOnlyList<string> value) => OnPropertyChanged(nameof(RecoveryCodesText));
@@ -99,9 +96,9 @@ public sealed partial class TelegramSetupViewModel(
     [RelayCommand]
     async Task FinishAsync(CancellationToken cancellationToken)
     {
-        notifications.ShowSuccess($"Đã kết nối Telegram với {ChatTitle}.");
+        notifications.ShowSuccess($"Đã kết nối Telegram với {ChatTitle}. Từ lần đăng nhập sau sẽ cần mã OTP.");
         RecoveryCodes = [];
-        await navigation.NavigateHomeAsync(cancellationToken);
+        await navigation.NavigateToAsync<TelegramSettingsViewModel>(null, cancellationToken);
     }
 
     [RelayCommand]
@@ -112,16 +109,8 @@ public sealed partial class TelegramSetupViewModel(
     }
 
     [RelayCommand]
-    async Task CancelAsync(CancellationToken cancellationToken)
-    {
-        if (IsMandatory)
-        {
-            authService.SignOut();
-            await navigation.NavigateToAsync<LoginViewModel>(null, cancellationToken);
-            return;
-        }
-        await navigation.NavigateToAsync<TelegramSettingsViewModel>(null, cancellationToken);
-    }
+    Task CancelAsync(CancellationToken cancellationToken) =>
+        navigation.NavigateToAsync<TelegramSettingsViewModel>(null, cancellationToken);
 
     async Task SendCodeCoreAsync(CancellationToken cancellationToken)
     {

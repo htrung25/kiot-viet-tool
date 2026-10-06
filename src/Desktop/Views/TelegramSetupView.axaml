@@ -105,12 +105,8 @@
                             Command="{Binding FinishCommand}" IsEnabled="{Binding CanFinish}" />
                 </StackPanel>
 
-                <Button Classes="ghost" HorizontalAlignment="Center" Command="{Binding CancelCommand}" IsVisible="{Binding !IsStep4}">
-                    <Panel>
-                        <TextBlock Text="Đăng xuất" IsVisible="{Binding IsMandatory}" />
-                        <TextBlock Text="Huỷ" IsVisible="{Binding !IsMandatory}" />
-                    </Panel>
-                </Button>
+                <Button Classes="ghost" HorizontalAlignment="Center" Content="Huỷ" Command="{Binding CancelCommand}"
+                        IsVisible="{Binding !IsStep4}" />
             </StackPanel>
         </Border>
     </ScrollViewer>

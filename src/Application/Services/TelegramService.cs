@@ -15,6 +15,7 @@ internal sealed class TelegramService(
     IUserAccountRepository accounts,
     ISecretProtectorService secretProtector,
     IOneTimeCodeService codes,
+    IPasswordHasherService passwordHasher,
     UserSessionService session,
     TimeProvider timeProvider,
     ILogger<TelegramService> logger) : ITelegramService
@@ -23,7 +24,10 @@ internal sealed class TelegramService(
     const int MaxAttempts = 5;
     static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(10);
 
+    const int MaxPasswordAttempts = 5;
+
     PendingSetup? _pending;
+    int _failedPasswordAttempts;
 
     public async Task<TelegramStatusDto?> GetStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -32,7 +36,48 @@ internal sealed class TelegramService(
         var recoveryCodes = session.CurrentUser is { } user && await accounts.GetByIdAsync(user.Id, cancellationToken) is { } account
             ? account.RecoveryCodeHashes.Count
             : 0;
-        return new TelegramStatusDto(connection.BotUsername, connection.ChatTitle, connection.ConnectedAtUtc, recoveryCodes);
+        return new TelegramStatusDto(connection.BotUsername, connection.ChatTitle, connection.ConnectedAtUtc, recoveryCodes,
+            connection.IsLoginOtpEnabled);
+    }
+
+    public async Task<Result> EnableLoginOtpAsync(CancellationToken cancellationToken = default)
+    {
+        if (session.CurrentUser is not { MustChangePassword: false }) return Result.Failure("Bạn chưa đăng nhập.");
+        if (await connections.GetAsync(cancellationToken) is not { } connection)
+            return Result.Failure("Chưa kết nối Telegram. Hãy kết nối bot trước.");
+        if (connection.IsLoginOtpEnabled) return Result.Success();
+
+        connection.SetLoginOtp(true);
+        await connections.SaveAsync(connection, cancellationToken);
+        logger.LogInformation("Telegram sign-in OTP enabled");
+        return Result.Success();
+    }
+
+    // Turning protection off needs the password again: an unattended signed-in session must not be enough.
+    public async Task<Result> DisableLoginOtpAsync(string password, CancellationToken cancellationToken = default)
+    {
+        if (await VerifyPasswordAsync(password, cancellationToken) is { } error) return Result.Failure(error);
+        if (await connections.GetAsync(cancellationToken) is not { IsLoginOtpEnabled: true } connection) return Result.Success();
+
+        connection.SetLoginOtp(false);
+        await connections.SaveAsync(connection, cancellationToken);
+        logger.LogWarning("Telegram sign-in OTP disabled; sign-in now needs the password only");
+        return Result.Success();
+    }
+
+    public async Task<Result> DisconnectAsync(string password, CancellationToken cancellationToken = default)
+    {
+        if (await VerifyPasswordAsync(password, cancellationToken) is { } error) return Result.Failure(error);
+
+        await connections.DeleteAsync(cancellationToken);
+        if (session.CurrentUser is { } user && await accounts.GetByIdAsync(user.Id, cancellationToken) is { } account)
+        {
+            account.ReplaceRecoveryCodes([], timeProvider.GetUtcNow().UtcDateTime);
+            await accounts.UpdateAsync(account, cancellationToken);
+        }
+        _pending = null;
+        logger.LogWarning("Telegram disconnected; bot token and recovery codes removed");
+        return Result.Success();
     }
 
     public async Task<Result<string>> VerifyBotAsync(string botToken, CancellationToken cancellationToken = default)
@@ -126,10 +171,34 @@ internal sealed class TelegramService(
         account.ReplaceRecoveryCodes(recoveryCodes.Select(codes.HashRecoveryCode), now);
         await accounts.UpdateAsync(account, cancellationToken);
         _pending = null;
-        session.Set(user with { NeedsTelegram = false });
         logger.LogInformation("Telegram connected to bot @{Bot}, chat {Chat}; {Count} recovery codes issued",
             pending.BotUsername, pending.Chat.Title, recoveryCodes.Count);
         return Result.Success(recoveryCodes);
+    }
+
+    /// <summary>
+    /// Null when <paramref name="password"/> is the signed-in user's password, otherwise the error to show.
+    /// Like the lock screen, <see cref="MaxPasswordAttempts"/> wrong passwords end the session.
+    /// </summary>
+    async Task<string?> VerifyPasswordAsync(string password, CancellationToken cancellationToken)
+    {
+        if (session.CurrentUser is not { MustChangePassword: false } user) return "Bạn chưa đăng nhập.";
+        if (string.IsNullOrEmpty(password)) return "Nhập mật khẩu tool để xác nhận.";
+        var account = await accounts.GetByIdAsync(user.Id, cancellationToken);
+        if (account is null) return "Không tìm thấy tài khoản.";
+        var hash = account.PasswordHash;
+        if (await Task.Run(() => passwordHasher.Verify(password, hash), cancellationToken))
+        {
+            _failedPasswordAttempts = 0;
+            return null;
+        }
+
+        if (++_failedPasswordAttempts < MaxPasswordAttempts)
+            return $"Mật khẩu không đúng. Còn {MaxPasswordAttempts - _failedPasswordAttempts} lần thử trước khi bị đăng xuất.";
+        _failedPasswordAttempts = 0;
+        logger.LogWarning("Signed out after {Attempts} wrong passwords while changing Telegram sign-in settings", MaxPasswordAttempts);
+        session.Set(null);
+        return $"Sai mật khẩu {MaxPasswordAttempts} lần nên bạn đã bị đăng xuất.";
     }
 
     const string InvalidTokenFormat = "Bot Token không đúng định dạng. Token có dạng 123456789:AAH… (lấy từ @BotFather).";

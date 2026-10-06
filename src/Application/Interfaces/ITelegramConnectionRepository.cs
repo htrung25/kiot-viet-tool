@@ -6,4 +6,5 @@ public interface ITelegramConnectionRepository
 {
     Task<TelegramConnection?> GetAsync(CancellationToken cancellationToken);
     Task SaveAsync(TelegramConnection connection, CancellationToken cancellationToken);
+    Task DeleteAsync(CancellationToken cancellationToken);
 }

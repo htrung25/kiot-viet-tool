@@ -41,10 +41,10 @@ internal sealed class AuthService(
         if (passwordHasher.NeedsRehash(account.PasswordHash))
             await UpgradePasswordHashAsync(account, password, cancellationToken);
 
-        var connection = await telegramConnections.GetAsync(cancellationToken);
-        if (connection is null)
+        // Telegram OTP is optional: without a connection, or with it switched off, the password is enough.
+        if (await telegramConnections.GetAsync(cancellationToken) is not { IsLoginOtpEnabled: true } connection)
         {
-            session.Set(new SignedInUserDto(account.Id, account.Username, account.MustChangePassword, NeedsTelegram: true));
+            session.Set(new SignedInUserDto(account.Id, account.Username, account.MustChangePassword));
             return Result.Success(new SignInResultDto(OtpRequired: false, null));
         }
 
@@ -115,8 +115,8 @@ internal sealed class AuthService(
         if (ActiveChallenge() is not { } challenge) return Result.Failure<string>("Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.");
         var wait = challenge.SentAtUtc + ResendDelay - UtcNow;
         if (wait > TimeSpan.Zero) return Result.Failure<string>($"Chờ {Math.Ceiling(wait.TotalSeconds)} giây rồi gửi lại mã.");
-        var connection = await telegramConnections.GetAsync(cancellationToken);
-        if (connection is null) return Result.Failure<string>("Chưa kết nối Telegram.");
+        if (await telegramConnections.GetAsync(cancellationToken) is not { IsLoginOtpEnabled: true } connection)
+            return Result.Failure<string>("Mã OTP qua Telegram đang tắt. Hãy đăng nhập lại.");
         return Result.Success(await SendOtpAsync(challenge.AccountId, connection, cancellationToken));
     }
 
@@ -145,7 +145,7 @@ internal sealed class AuthService(
         account.ChangePassword(newHash, timeProvider.GetUtcNow().UtcDateTime);
         await repository.UpdateAsync(account, cancellationToken);
 
-        session.Set(user with { MustChangePassword = false, NeedsTelegram = await telegramConnections.GetAsync(cancellationToken) is null });
+        session.Set(user with { MustChangePassword = false });
         return Result.Success();
     }
 
@@ -210,7 +210,7 @@ internal sealed class AuthService(
         pending.Current = null;
         account.ResetOtpFailures();
         await repository.UpdateAsync(account, cancellationToken);
-        session.Set(new SignedInUserDto(account.Id, account.Username, account.MustChangePassword, NeedsTelegram: false));
+        session.Set(new SignedInUserDto(account.Id, account.Username, account.MustChangePassword));
     }
 
     // Sign-in is the only moment the plain password is available, so weak hashes are upgraded here.

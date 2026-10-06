@@ -21,4 +21,10 @@ internal sealed class TelegramConnectionRepository(IDbContextFactory<AppDbContex
         else db.TelegramConnections.Update(connection);
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteAsync(CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        await db.TelegramConnections.ExecuteDeleteAsync(cancellationToken);
+    }
 }

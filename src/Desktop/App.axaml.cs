@@ -95,7 +95,6 @@ public sealed partial class App(SingleInstanceService? singleInstance) : Avaloni
                 services.AddSingleton(new NavigationRoutes(
                     Login: typeof(LoginViewModel),
                     ChangePassword: typeof(ChangePasswordViewModel),
-                    TelegramSetup: typeof(TelegramSetupViewModel),
                     Home: typeof(ProductListViewModel)));
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();

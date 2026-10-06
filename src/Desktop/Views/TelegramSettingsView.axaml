@@ -8,23 +8,34 @@
         <StackPanel Classes="page" Spacing="20" MaxWidth="760" HorizontalAlignment="Left">
             <StackPanel Spacing="4">
                 <TextBlock Text="Telegram" Classes="h1" />
-                <TextBlock Text="Bot Telegram nhận mã đăng nhập và (sắp có) thông báo về chương trình giảm giá."
-                           Classes="subtitle" />
+                <TextBlock Text="Bot Telegram (không bắt buộc) gửi mã đăng nhập 2 lớp và (sắp có) thông báo về chương trình giảm giá."
+                           Classes="subtitle" TextWrapping="Wrap" />
             </StackPanel>
 
             <Border Classes="card">
                 <StackPanel Margin="24,20" Spacing="16">
                     <DockPanel>
-                        <Button DockPanel.Dock="Right" Classes="secondary" VerticalAlignment="Center"
-                                Command="{Binding ReconnectCommand}">
+                        <Button DockPanel.Dock="Right" Classes="secondary" VerticalAlignment="Center" Margin="12,0,0,0"
+                                Command="{Binding ConnectCommand}" IsEnabled="{Binding IsIdle}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <PathIcon Data="{StaticResource Icon.Send}" />
-                                <TextBlock Text="Kết nối lại" />
+                                <TextBlock Text="{Binding ConnectButtonText}" />
                             </StackPanel>
                         </Button>
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Mã đăng nhập" Classes="h2" FontSize="16" />
-                            <TextBlock Text="Mỗi lần đăng nhập, bot gửi mã 6 số tới tài khoản Telegram dưới đây." Classes="caption" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Mã đăng nhập (OTP)" Classes="h2" FontSize="16" VerticalAlignment="Center" />
+                                <Border Classes="badge success" IsVisible="{Binding IsOtpEnabled}">
+                                    <TextBlock Text="Đang bật" />
+                                </Border>
+                                <Border Classes="badge" IsVisible="{Binding IsOtpDisabled}">
+                                    <TextBlock Text="Đang tắt" />
+                                </Border>
+                                <Border Classes="badge" IsVisible="{Binding !IsConnected}">
+                                    <TextBlock Text="Chưa kết nối" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding OtpStatusText}" Classes="caption" TextWrapping="Wrap" />
                         </StackPanel>
                     </DockPanel>
 
@@ -56,6 +67,41 @@
                             <PathIcon Data="{StaticResource Icon.AlertCircle}" />
                             <TextBlock Text="Sắp hết mã dự phòng. Bấm Kết nối lại để tạo bộ mã mới." />
                         </DockPanel>
+                    </Border>
+
+                    <Border Classes="alert error"
+                            IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <DockPanel>
+                            <PathIcon Data="{StaticResource Icon.AlertCircle}" />
+                            <TextBlock Text="{Binding ErrorMessage}" />
+                        </DockPanel>
+                    </Border>
+
+                    <!-- On / off and disconnect; turning protection off asks for the password again -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsConnected}">
+                        <Button Classes="accent" Content="Bật mã OTP" Command="{Binding EnableOtpCommand}"
+                                IsVisible="{Binding IsOtpDisabled}" IsEnabled="{Binding IsIdle}" />
+                        <Button Classes="secondary" Content="Tắt mã OTP" Command="{Binding StartDisableOtpCommand}"
+                                IsVisible="{Binding IsOtpEnabled}" IsEnabled="{Binding IsIdle}" />
+                        <Button Classes="ghost" Content="Ngắt kết nối Telegram" Foreground="{StaticResource Danger}"
+                                Command="{Binding StartDisconnectCommand}" IsEnabled="{Binding IsIdle}" />
+                    </StackPanel>
+
+                    <Border Classes="alert warning" IsVisible="{Binding IsConfirming}">
+                        <StackPanel Spacing="12">
+                            <DockPanel>
+                                <PathIcon Data="{StaticResource Icon.Lock}" />
+                                <TextBlock Text="{Binding ConfirmText}" />
+                            </DockPanel>
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                <TextBox Text="{Binding Password}" PasswordChar="•" Classes="revealPasswordButton"
+                                         PlaceholderText="Mật khẩu tool" />
+                                <Button Grid.Column="1" Classes="danger" Content="{Binding ConfirmButtonText}"
+                                        Command="{Binding ConfirmCommand}" IsEnabled="{Binding IsIdle}" IsDefault="True" />
+                                <Button Grid.Column="2" Classes="ghost" Content="Huỷ" Command="{Binding CancelConfirmCommand}"
+                                        IsEnabled="{Binding IsIdle}" />
+                            </Grid>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
             </Border>

@@ -60,6 +60,7 @@ App tự áp migration mỗi lần khởi động, không cần chạy `dotnet e
 
 - Tool chỉ có **một tài khoản admin**. Lần chạy đầu tiên app tự tạo tài khoản `admin` / `admin` (lấy từ mục `Auth` trong `appsettings.json`), và bắt đổi mật khẩu ở lần đăng nhập đầu.
 - Đổi mật khẩu sau này: nút **Đổi mật khẩu** trên thanh trên cùng.
+- **Mã OTP qua Telegram (không bắt buộc, khuyên dùng):** *Hệ thống → Kết nối Telegram* → *Kết nối Telegram* để gắn bot của cửa hàng; từ đó mỗi lần đăng nhập, sau mật khẩu cần thêm mã 6 số bot gửi tới. Bật / tắt mã OTP hoặc ngắt kết nối ngay trên màn đó (tắt và ngắt kết nối phải nhập lại mật khẩu, sai 5 lần sẽ bị đăng xuất). Mất Telegram thì dùng một trong 10 mã dự phòng đã lưu khi kết nối.
 - **Quên mật khẩu:** tắt app, xoá bảng tài khoản bằng `sqlite3 app.db "DELETE FROM UserAccounts;"` (hoặc công cụ SQLite bất kỳ). Lần chạy sau app sẽ tạo lại `admin` / `admin`. Dữ liệu khác không bị ảnh hưởng.
 
 ## Cấu hình

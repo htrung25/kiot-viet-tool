@@ -51,9 +51,7 @@ public sealed partial class MainViewModel : ObservableObject
     public IdleLockService IdleLock { get; }
     public LockScreenViewModel? LockScreen => IdleLock.IsLocked ? _lockScreen : null;
 
-    /// <summary>Sidebar is hidden on Login, the forced first-login password change and the mandatory Telegram setup (full-screen flows).</summary>
-    public bool ShowChrome => _session.CurrentUser is { MustChangePassword: false, NeedsTelegram: false }
-        && Navigation.CurrentViewModel is not TelegramSetupViewModel { IsMandatory: true };
+    public bool ShowChrome => _session.CurrentUser is { MustChangePassword: false };
 
     public bool ShowClockWarning => ShowChrome && _clock.IsSkewed;
 

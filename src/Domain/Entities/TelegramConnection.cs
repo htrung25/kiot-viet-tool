@@ -12,6 +12,7 @@ public sealed class TelegramConnection
     public long ChatId { get; private set; }
     public string ChatTitle { get; private set; } = "";
     public DateTime ConnectedAtUtc { get; private set; }
+    public bool IsLoginOtpEnabled { get; private set; }
 
     private TelegramConnection() { } // EF Core
 
@@ -32,7 +33,10 @@ public sealed class TelegramConnection
         ChatId = chatId;
         ChatTitle = Truncate(chatTitle);
         ConnectedAtUtc = nowUtc;
+        IsLoginOtpEnabled = true; // connecting (or reconnecting) a bot is done to receive sign-in codes
     }
+
+    public void SetLoginOtp(bool enabled) => IsLoginOtpEnabled = enabled;
 
     static string Truncate(string value) => value.Length > NameMaxLength ? value[..NameMaxLength] : value;
 }

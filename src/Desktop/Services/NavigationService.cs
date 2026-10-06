@@ -35,7 +35,6 @@ public sealed partial class NavigationService(IServiceProvider services, IUserSe
         if (typeof(IAnonymousViewModel).IsAssignableFrom(requested)) return requested;
         if (session.CurrentUser is not { } user) return routes.Login;
         if (user.MustChangePassword) return routes.ChangePassword;
-        if (user.NeedsTelegram) return routes.TelegramSetup;
         return requested;
     }
 }
