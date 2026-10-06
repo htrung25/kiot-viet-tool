@@ -23,7 +23,6 @@ internal static class Program
             .StartWithClassicDesktopLifetime(args);
     }
 
-    /// <summary>Entry point for the XAML previewer; do not remove.</summary>
     public static AppBuilder BuildAvaloniaApp() => Configure(AppBuilder.Configure<App>());
 
     static AppBuilder Configure(AppBuilder builder) =>

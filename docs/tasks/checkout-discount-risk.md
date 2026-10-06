@@ -1,6 +1,6 @@
 # Task: Giảm rủi ro mô hình giảm giá tại quầy
 
-> Trạng thái: **T1 đã làm (chưa commit, chờ review)** · T2–T6 chưa làm
+> Trạng thái: **T1, T2 đã làm (chưa commit, chờ review)** · T3–T6 chưa làm
 > Nguồn: phản biện 1 trong buổi review dự án (2026-10-07)
 
 ## 1. Bối cảnh

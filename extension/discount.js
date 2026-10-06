@@ -1,19 +1,25 @@
 (function (root) {
   const FRESH_MS = 30 * 60 * 1000;
+  const HIGH_DISCOUNT_RATIO = 0.5; 
+  const TOTAL_FIELDS = ["SubTotal", "Total"];
+  const CHANGED = "Cấu trúc hoá đơn KiotViet đã thay đổi, tiện ích tạm không giảm giá";
+
+  function isLineArray(items) {
+    const first = Array.isArray(items) && items.length > 0 ? items[0] : null;
+    return !!first && typeof first === "object" && Number.isFinite(first.ProductId) && Number.isFinite(first.Quantity);
+  }
+
+  function linePrice(x) {
+    return Number.isFinite(x.Price) ? x.Price : Number(x.BasePrice);
+  }
 
   function readLines(cart) {
     for (const key of Object.keys(cart || {})) {
       const items = cart[key];
-      if (!Array.isArray(items) || items.length === 0) continue;
-      const first = items[0];
-      if (!first || typeof first !== "object" || !Number.isFinite(first.ProductId) || !Number.isFinite(first.Quantity)) continue;
+      if (!isLineArray(items)) continue;
       return {
         key,
-        lines: items.map((x) => ({
-          productId: x.ProductId,
-          quantity: Number(x.Quantity),
-          price: Number.isFinite(x.Price) ? x.Price : Number(x.BasePrice),
-        })),
+        lines: items.map((x) => ({ productId: x.ProductId, quantity: Number(x.Quantity), price: linePrice(x) })),
       };
     }
     return null;
@@ -36,6 +42,32 @@
     return Math.round(total * 100) / 100;
   }
 
+  function subtotal(lines) {
+    return lines.reduce((sum, l) => sum + (l.quantity > 0 && l.price > 0 ? l.price * l.quantity : 0), 0);
+  }
+
+  // Null when the cart looks like the one the extension was written for; otherwise why nothing is applied.
+  function validateCart(cart) {
+    const arrays = Object.keys(cart || {}).filter((k) => isLineArray(cart[k]));
+    if (arrays.length === 0) return "Không đọc được dòng hàng của hoá đơn.";
+    if (arrays.length > 1) return `${CHANGED} (có ${arrays.length} danh sách hàng).`;
+
+    for (const x of cart[arrays[0]]) {
+      if (!x || typeof x !== "object" || !Number.isInteger(x.ProductId) || x.ProductId <= 0) return `${CHANGED} (mã hàng không hợp lệ).`;
+      if (!Number.isFinite(x.Quantity) || x.Quantity < 0) return `${CHANGED} (số lượng không hợp lệ).`;
+      const price = linePrice(x);
+      if (!Number.isFinite(price) || price < 0) return `${CHANGED} (đơn giá không hợp lệ).`;
+    }
+
+    // A changed meaning of Price shows up as lines that no longer add up to the cart total.
+    const sum = subtotal(readLines(cart).lines);
+    const discounts = [0, Number(cart.Discount) || 0, (Number(cart.Discount) || 0) + (Number(cart.DiscountByPromotionValue) || 0)];
+    const totals = TOTAL_FIELDS.map((f) => cart[f]).filter(Number.isFinite);
+    if (totals.length > 0 && !totals.some((t) => discounts.some((d) => Math.abs(sum - d - t) <= 1)))
+      return `${CHANGED} (tổng tiền hàng không khớp giá từng dòng).`;
+    return null;
+  }
+
   function signature(lines) {
     return lines.map((l) => `${l.productId}:${l.quantity}:${l.price}`).join("|");
   }
@@ -51,14 +83,20 @@
   function decide(cart, mine, feedState, machineNowMs) {
     const current = Number(cart.Discount) || 0;
     if (current > 0 && current !== mine) return { action: "skip", reason: "Hoá đơn đã có giảm giá nhập tay." };
-    const problem = feedProblem(feedState, machineNowMs);
+    const problem = feedProblem(feedState, machineNowMs) || validateCart(cart);
     if (problem) return { action: "set", amount: 0, reason: problem };
     const read = readLines(cart);
-    if (!read) return { action: "set", amount: 0, reason: "Không đọc được dòng hàng của hoá đơn." };
     const amount = computeDiscount(read.lines, feedState.feed.programs, machineNowMs + (feedState.offsetMs || 0));
-    return { action: "set", amount, signature: signature(read.lines) };
+    const goods = subtotal(read.lines);
+    return {
+      action: "set",
+      amount,
+      signature: signature(read.lines),
+      confirm: amount > 0 && amount > goods * HIGH_DISCOUNT_RATIO,
+      subtotal: goods,
+    };
   }
 
-  root.KvtDiscount = { readLines, computeDiscount, signature, feedProblem, decide, FRESH_MS };
+  root.KvtDiscount = { readLines, computeDiscount, subtotal, validateCart, signature, feedProblem, decide, FRESH_MS, HIGH_DISCOUNT_RATIO };
   if (typeof module !== "undefined") module.exports = root.KvtDiscount;
 })(typeof window !== "undefined" ? window : globalThis);

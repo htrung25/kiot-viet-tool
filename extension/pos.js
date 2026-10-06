@@ -1,9 +1,13 @@
 (function () {
   const K = window.KvtDiscount;
+  const FINGERPRINT_KEY = "kvt-adjust-discount-fingerprint";
+  const CHANGED_WARNING_MS = 24 * 60 * 60 * 1000;
   const applied = new WeakMap();
   const signatures = new WeakMap();
+  const answered = new WeakMap(); // cart -> { signature, accepted } for the high-discount question
   let feedState = null;
   let lastIssue = null;
+  let pageWarning = null;
   let watching = false;
 
   window.addEventListener("message", (event) => {
@@ -27,9 +31,36 @@
     return null;
   }
 
+  function controllerProblem(controller) {
+    if (!controller) return "Không tìm thấy ô Giảm giá của KiotViet (có thể KiotViet vừa cập nhật giao diện).";
+    if (controller.adjustDiscount.length !== 1) return "Hàm giảm giá của KiotViet đã thay đổi, tiện ích tạm không giảm giá.";
+    return null;
+  }
+
+  // A different adjustDiscount source means KiotViet shipped a new POS: keep working but show a warning for a day.
+  function checkFingerprint(controller) {
+    const source = String(controller.adjustDiscount);
+    let hash = 2166136261;
+    for (let i = 0; i < source.length; i++) hash = Math.imul(hash ^ source.charCodeAt(i), 16777619) >>> 0;
+    try {
+      const saved = JSON.parse(localStorage.getItem(FINGERPRINT_KEY) || "null");
+      if (!saved || saved.hash !== hash) {
+        localStorage.setItem(FINGERPRINT_KEY, JSON.stringify({ hash, since: Date.now(), changed: !!saved }));
+        pageWarning = saved ? "KiotViet vừa cập nhật trang bán hàng. Kiểm tra vài hoá đơn đầu xem giảm giá có đúng không." : null;
+      } else {
+        pageWarning = saved.changed && Date.now() - saved.since < CHANGED_WARNING_MS
+          ? "KiotViet vừa cập nhật trang bán hàng. Kiểm tra vài hoá đơn đầu xem giảm giá có đúng không."
+          : null;
+      }
+    } catch {
+      pageWarning = null; // storage blocked: the check is only a warning
+    }
+  }
+
   function writeDiscount(root, cart, amount) {
     const controller = paymentController();
-    if (!controller) throw new Error("Không tìm thấy ô Giảm giá của KiotViet (có thể KiotViet vừa cập nhật giao diện).");
+    const problem = controllerProblem(controller);
+    if (problem) throw new Error(problem);
     const run = () =>
       controller.adjustDiscount({
         DiscountValue: amount,
@@ -42,6 +73,30 @@
     else root.$apply(run);
   }
 
+  // Writes, then reads back: if KiotViet did not take the amount, put the invoice back to no discount.
+  function writeVerified(root, cart, amount) {
+    writeDiscount(root, cart, amount);
+    const now = Number(cart.Discount) || 0;
+    if (Math.abs(now - amount) <= 0.01) return;
+    try {
+      writeDiscount(root, cart, 0);
+    } catch {
+      // the error below already tells the cashier
+    }
+    throw new Error(`KiotViet không nhận số giảm giá (đã ghi ${amount}, đọc lại ${now}). Tiện ích đã đặt lại về 0.`);
+  }
+
+  function confirmHighDiscount(cart, decision) {
+    const previous = answered.get(cart);
+    if (previous && previous.signature === decision.signature) return previous.accepted;
+    const accepted = window.confirm(
+      `KiotViet Tool sắp giảm ${decision.amount.toLocaleString("vi-VN")} ₫, hơn ${Math.round(K.HIGH_DISCOUNT_RATIO * 100)}% ` +
+        `tiền hàng (${decision.subtotal.toLocaleString("vi-VN")} ₫).\n\nBấm OK để áp dụng, Cancel để thanh toán không giảm giá.`,
+    );
+    answered.set(cart, { signature: decision.signature, accepted });
+    return accepted;
+  }
+
   function applyAtCheckout() {
     const root = angularRoot();
     const cart = root && root.activeCart;
@@ -50,15 +105,21 @@
     const decision = K.decide(cart, mine, feedState, Date.now());
     lastIssue = decision.reason || null;
     if (decision.action === "skip") return render();
+    let amount = decision.amount;
+    if (decision.confirm && !confirmHighDiscount(cart, decision)) {
+      amount = 0;
+      lastIssue = "Thu ngân đã bỏ qua mức giảm lớn cho hoá đơn này.";
+    }
     const current = Number(cart.Discount) || 0;
-    if (decision.amount === mine && current === mine) return render();
-    if (decision.amount === 0 && mine === 0) return render();
+    if (amount === mine && current === mine) return render();
+    if (amount === 0 && mine === 0) return render();
     try {
-      writeDiscount(root, cart, decision.amount);
-      applied.set(cart, decision.amount);
+      writeVerified(root, cart, amount);
+      applied.set(cart, amount);
       signatures.set(cart, decision.signature);
-      console.info("[KiotViet Tool] Giảm giá hoá đơn:", decision.amount);
+      console.info("[KiotViet Tool] Giảm giá hoá đơn:", amount);
     } catch (error) {
+      applied.delete(cart);
       lastIssue = error.message;
       console.error("[KiotViet Tool]", error);
     }
@@ -115,6 +176,8 @@
         return read ? K.signature(read.lines) : "";
       }, resetIfCartChanged);
     }
+    const controller = window.angular ? paymentController() : null;
+    if (controller && typeof controller.adjustDiscount === "function") checkFingerprint(controller);
     render();
   }, 2000);
 
@@ -131,7 +194,7 @@
         "font:12px/1.4 system-ui,sans-serif;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);pointer-events:none";
       document.body.appendChild(badge);
     }
-    const problem = K.feedProblem(feedState, Date.now()) || (window.angular && !paymentController() ? "Không tìm thấy ô Giảm giá của KiotViet." : null) || lastIssue;
+    const problem = K.feedProblem(feedState, Date.now()) || (window.angular ? controllerProblem(paymentController()) : null) || lastIssue;
     const live = feedState && feedState.feed
       ? feedState.feed.programs.filter((p) => {
           const now = Date.now() + (feedState.offsetMs || 0);
@@ -139,7 +202,9 @@
         }).length
       : 0;
     badge.hidden = false;
-    badge.style.background = problem ? "#B91C1C" : "#15803D";
-    badge.textContent = problem ? `KiotViet Tool: ${problem}` : `KiotViet Tool: ${live} chương trình đang giảm giá`;
+    badge.style.background = problem ? "#B91C1C" : pageWarning ? "#B45309" : "#15803D";
+    badge.textContent = problem
+      ? `KiotViet Tool: ${problem}`
+      : `KiotViet Tool: ${live} chương trình đang giảm giá` + (pageWarning ? `. ${pageWarning}` : "");
   }
 })();

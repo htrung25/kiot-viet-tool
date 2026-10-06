@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "KiotViet Tool – Giảm giá tại quầy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tự cộng tiền giảm của chương trình KiotViet Tool vào ô Giảm giá khi thu ngân bấm Thanh toán.",
   "permissions": ["storage", "alarms"],
   "optional_host_permissions": ["https://*/*"],
