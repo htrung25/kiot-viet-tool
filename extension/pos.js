@@ -2,6 +2,11 @@
   const K = window.KvtDiscount;
   const FINGERPRINT_KEY = "kvt-adjust-discount-fingerprint";
   const CHANGED_WARNING_MS = 24 * 60 * 60 * 1000;
+  const SETTLE_MS = 300;
+  const SETTLE_WITHOUT_INLINE_QR_MS = 1000; // nothing to watch: wait out KiotViet's debounced QR generation
+  const SETTLE_TIMEOUT_MS = 3000;
+  const INLINE_QR = "div.k-pay-checkout-qrcode img";
+  const NOT_SETTLED = "Số tiền chưa kịp cập nhật. Đóng mã QR và mở lại để kiểm tra số tiền.";
   const applied = new WeakMap();
   const signatures = new WeakMap();
   const answered = new WeakMap(); // cart -> { signature, accepted } for the high-discount question
@@ -9,6 +14,9 @@
   let lastIssue = null;
   let pageWarning = null;
   let watching = false;
+  let lastWriteAt = 0;
+  let qrBeforeWrite = null;
+  let pending = false;
 
   window.addEventListener("message", (event) => {
     if (event.source !== window || !event.data || event.data.__kvtFeed !== true) return;
@@ -71,6 +79,24 @@
       });
     if (root.$$phase) run();
     else root.$apply(run);
+    regenerateQr(root, controller);
+  }
+
+  function inlineQrSrc() {
+    const img = document.querySelector(INLINE_QR);
+    return img ? img.getAttribute("src") : null;
+  }
+
+  // KiotViet redraws the transfer QR (inline and popup) from getPaymentVietQRCode, which it calls on tab or bank
+  // changes but not when the discount changes.
+  function regenerateQr(root, controller) {
+    if (typeof controller.getPaymentVietQRCode !== "function") return;
+    try {
+      if (root.$$phase) controller.getPaymentVietQRCode(true);
+      else root.$apply(() => controller.getPaymentVietQRCode(true));
+    } catch (error) {
+      console.error("[KiotViet Tool] Không vẽ lại được mã QR", error);
+    }
   }
 
   // Writes, then reads back: if KiotViet did not take the amount, put the invoice back to no discount.
@@ -97,7 +123,7 @@
     return accepted;
   }
 
-  function applyAtCheckout() {
+  function applyAtCheckout(canAsk) {
     const root = angularRoot();
     const cart = root && root.activeCart;
     if (!cart) return;
@@ -106,6 +132,8 @@
     lastIssue = decision.reason || null;
     if (decision.action === "skip") return render();
     let amount = decision.amount;
+    // A dialog opened on pointerdown swallows the click that follows: ask on click only.
+    if (decision.confirm && !canAsk && answered.get(cart)?.signature !== decision.signature) return render();
     if (decision.confirm && !confirmHighDiscount(cart, decision)) {
       amount = 0;
       lastIssue = "Thu ngân đã bỏ qua mức giảm lớn cho hoá đơn này.";
@@ -114,7 +142,9 @@
     if (amount === mine && current === mine) return render();
     if (amount === 0 && mine === 0) return render();
     try {
+      qrBeforeWrite = inlineQrSrc();
       writeVerified(root, cart, amount);
+      lastWriteAt = Date.now();
       applied.set(cart, amount);
       signatures.set(cart, decision.signature);
       console.info("[KiotViet Tool] Giảm giá hoá đơn:", amount);
@@ -142,19 +172,24 @@
     }
   }
 
-  function isCheckoutTrigger(event) {
-    if (event.type === "keydown") return event.key === "F9";
-    if (!(event.target instanceof Element)) return false;
-    if (event.target.closest("payment-invoice-component")) return true;
-    const button = event.target.closest("button, a, .btn");
-    const text = button ? button.textContent.normalize("NFC").trim().toUpperCase() : "";
-    return text === "THANH TOÁN" || /\bQR\b/.test(text);
+  function inPaymentPanel(target) {
+    return target instanceof Element && !!target.closest("payment-invoice-component");
   }
 
-  function onTrigger(event) {
-    if (!isCheckoutTrigger(event)) return;
+  // The element that opens the QR or completes the sale; short text only, so a container holding those words never matches.
+  function checkoutButton(target) {
+    if (!(target instanceof Element)) return null;
+    // KiotViet's payment widget (k-pay / k-finance) opens its QR popup from an icon without text.
+    const qrIcon = target.closest(".kfin-qr-btn, .kfin-print-qr");
+    if (qrIcon) return qrIcon;
+    const button = target.closest("button, a, .btn, [ng-click], [role=button]");
+    const text = button ? button.textContent.normalize("NFC").replace(/\s+/g, " ").trim().toUpperCase() : "";
+    return text.length <= 30 && (text === "THANH TOÁN" || /\bQR\b/.test(text)) ? button : null;
+  }
+
+  function safeApply(canAsk) {
     try {
-      applyAtCheckout();
+      applyAtCheckout(canAsk);
     } catch (error) {
       lastIssue = error.message;
       console.error("[KiotViet Tool]", error);
@@ -162,9 +197,87 @@
     }
   }
 
-  document.addEventListener("pointerdown", onTrigger, true);
-  document.addEventListener("click", onTrigger, true);
-  document.addEventListener("keydown", onTrigger, true);
+  function block(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  // The discount is in the cart and, when an inline transfer QR is shown, it has been redrawn (its generation is debounced).
+  function settled() {
+    const root = angularRoot();
+    const cart = root && root.activeCart;
+    if (cart && Math.abs((Number(cart.Discount) || 0) - (applied.get(cart) || 0)) > 0.01) return false;
+    const qr = inlineQrSrc();
+    if (qr === null || qrBeforeWrite === null) return Date.now() - lastWriteAt >= SETTLE_WITHOUT_INLINE_QR_MS;
+    return qr !== qrBeforeWrite;
+  }
+
+  // Holds the cashier's action while KiotViet catches up with the discount just written, then replays it once.
+  function holdAndReplay(event, replay) {
+    if (Date.now() - lastWriteAt >= SETTLE_MS && settled()) {
+      console.info("[KiotViet Tool] Không giữ cú bấm: giảm giá và mã QR đã cập nhật");
+      return;
+    }
+    console.info("[KiotViet Tool] Giữ cú bấm", event.type, "để chờ số tiền cập nhật");
+    block(event);
+    pending = true;
+    const started = Date.now();
+    (function check() {
+      const ready = Date.now() - lastWriteAt >= SETTLE_MS && settled();
+      if (!ready && Date.now() - started < SETTLE_TIMEOUT_MS) return void setTimeout(check, 50);
+      if (!ready) lastIssue = NOT_SETTLED;
+      pending = false;
+      console.info("[KiotViet Tool] Bấm lại sau", Date.now() - started, "ms, số tiền ổn định:", ready);
+      try {
+        replay();
+      } catch (error) {
+        lastIssue = error.message;
+        console.error("[KiotViet Tool]", error);
+      }
+      render();
+    })();
+  }
+
+  function onPointerDown(event) {
+    if (event.__kvtReplay) return;
+    const button = checkoutButton(event.target);
+    if (pending && button) return block(event);
+    if (button || inPaymentPanel(event.target)) safeApply(false);
+  }
+
+  function onClick(event) {
+    if (event.__kvtReplay) return;
+    const button = checkoutButton(event.target);
+    if (pending && button) return block(event);
+    if (!button && !inPaymentPanel(event.target)) return;
+    if (!button) console.info("[KiotViet Tool] Cú bấm trong khung thanh toán, không phải nút QR / Thanh toán:", event.target);
+    safeApply(true);
+    if (!button) return;
+    const target = event.target;
+    holdAndReplay(event, () => {
+      const replay = new MouseEvent("click", { bubbles: true, cancelable: true, view: window });
+      replay.__kvtReplay = true;
+      target.dispatchEvent(replay);
+    });
+  }
+
+  function onKeyDown(event) {
+    if (event.key !== "F9" || event.__kvtReplay) return;
+    if (pending) return block(event);
+    safeApply(true);
+    const target = event.target instanceof EventTarget ? event.target : document.body;
+    holdAndReplay(event, () => {
+      const replay = new KeyboardEvent("keydown", { key: "F9", code: "F9", bubbles: true, cancelable: true });
+      Object.defineProperty(replay, "keyCode", { value: 120 });
+      Object.defineProperty(replay, "which", { value: 120 });
+      replay.__kvtReplay = true;
+      target.dispatchEvent(replay);
+    });
+  }
+
+  window.addEventListener("pointerdown", onPointerDown, true);
+  window.addEventListener("click", onClick, true);
+  window.addEventListener("keydown", onKeyDown, true);
 
   setInterval(() => {
     const root = angularRoot();
